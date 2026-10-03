@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
 
 import { CodeCells, type CodeCellsHandle } from '@/components/ds/CodeCells';
@@ -11,6 +11,12 @@ import { haptic } from '@/lib/haptics';
 import { inviteCodeFromPath } from '@/lib/invite';
 import { INVITE_CODE_ALPHABET, INVITE_CODE_LENGTH, type ChallengeSummary } from '@/shared/contracts';
 import { color, space, type } from '@/theme/tokens';
+
+const WHERE = [
+  { icon: 'square.and.arrow.up', text: 'On the invite card, under the QR code' },
+  { icon: 'link', text: 'At the end of the invite link (…/j/ABC234)' },
+  { icon: 'person.2.fill', text: 'Next to the timer on any challenge screen. Ask someone who’s in.' },
+] as const;
 
 const ALLOWED = new RegExp(`[^${INVITE_CODE_ALPHABET}]`, 'g');
 
@@ -60,11 +66,28 @@ export default function EnterCode() {
           </Pressable>
         </Row>
 
-        <View style={{ flex: 1, justifyContent: 'center', gap: space.xl }}>
-          <View style={{ gap: space.sm }}>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ gap: space.xl, paddingTop: space.md, paddingBottom: space.lg }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          <View style={{ gap: space.md }}>
+            <View style={styles.badge}>
+              <IconSymbol name="ticket.fill" size={26} color={color.volt} />
+            </View>
             <T v="title">Have a code?</T>
-            <T v="caption">Enter the 6-character code from your invite.</T>
+            <T v="body" style={{ color: color.muted }}>
+              Every challenge has a 6-character code. Enter it to see the challenge, its prize pool and who's walking — then join in one hold.
+            </T>
           </View>
+
+          {!found ? (
+            <Card style={{ gap: space.md, paddingVertical: space.md }}>
+              <T v="label">Where to find it</T>
+              {WHERE.map((w) => (
+                <Row key={w.text} gap={space.md} style={{ alignItems: 'flex-start' }}>
+                  <IconSymbol name={w.icon} size={16} color={color.volt} />
+                  <T v="caption" style={{ flex: 1, color: color.text }}>{w.text}</T>
+                </Row>
+              ))}
+            </Card>
+          ) : null}
 
           <CodeCells
             ref={cells}
@@ -120,7 +143,7 @@ export default function EnterCode() {
               </Card>
             </Animated.View>
           ) : null}
-        </View>
+        </ScrollView>
 
         <View style={{ paddingBottom: space.xl }}>
           {found ? (
@@ -135,3 +158,7 @@ export default function EnterCode() {
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  badge: { width: 52, height: 52, borderRadius: 16, backgroundColor: color.voltDim, alignItems: 'center', justifyContent: 'center' },
+});

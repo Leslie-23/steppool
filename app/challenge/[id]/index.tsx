@@ -138,6 +138,12 @@ export default function ArenaScreen() {
             <IconSymbol name="clock.fill" size={13} color={color.muted} />
             <T v="caption">{c.status === 'upcoming' ? 'Starts in ' : c.status === 'live' ? 'Ends in ' : ''}</T>
             <Countdown to={c.status === 'upcoming' ? c.startsAt : c.endsAt} style={{ color: color.text, fontSize: 14 }} />
+            <View style={{ flex: 1 }} />
+            {/* The code, readable aloud or from a screenshot; tap to share it. */}
+            <Pressable onPress={() => Share.share({ message: inviteText })} style={styles.codeChip} accessibilityLabel={`Invite code ${c.inviteCode.split('').join(' ')}. Tap to share.`}>
+              <T v="label" style={{ fontSize: 10 }}>Code</T>
+              <T style={[type.num, { fontSize: 14, letterSpacing: 2 }]}>{c.inviteCode}</T>
+            </Pressable>
           </Row>
         </Animated.View>
 
@@ -239,5 +245,6 @@ export default function ArenaScreen() {
 
 const styles = StyleSheet.create({
   liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: color.volt },
+  codeChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, borderColor: color.highlight, backgroundColor: color.surface },
   offscreen: { position: 'absolute', left: -10000, top: 0 },
 });

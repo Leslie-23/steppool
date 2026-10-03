@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" xmlns:c2pa="http://c2pa.org/manifest">
+<rect width="1024" height="1024" fill="#D7FF3A"></rect>
+<defs>
+<g id="foot" fill="#000">
+<circle cx="16" cy="10" r="8"></circle>
+<circle cx="30" cy="5.5" r="5.5"></circle>
+<circle cx="41" cy="9" r="5"></circle>
+<circle cx="50" cy="15" r="4.5"></circle>
+<circle cx="57" cy="23" r="4"></circle>
+<path d="M18 26 C34 20 54 26 56 42 C58 56 50 66 46 78 C42 92 34 100 24 100 C12 100 8 90 9 78 C10 64 4 52 6 40 C7 31 11 28 18 26 Z"></path>
+</g>
+</defs>
+<g transform="rotate(45 512 512)">
+<use href="#foot" transform="translate(492 402) scale(-3.4 3.4)"></use>
+<use href="#foot" transform="translate(532 262) scale(3.4)"></use>
+</g>
+</svg>

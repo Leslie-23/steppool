@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -35,8 +36,13 @@ export default function ConsoleLayout({ children }: LayoutProps<"/admin">) {
   return (
     <div className="min-h-screen md:grid md:grid-cols-[220px_1fr]">
       <aside className="border-b md:border-b-0 md:border-r border-hairline p-4 md:p-6 md:min-h-screen">
-        <div className="label" style={{ color: "var(--volt)" }}>StepPool</div>
-        <div className="num text-xl font-bold mt-1 mb-6">Admin</div>
+        <div className="flex items-center gap-3 mb-6">
+          <Image src="/steppool-icon.svg" alt="" width={36} height={36} unoptimized className="rounded-lg" />
+          <div>
+            <div className="label" style={{ color: "var(--volt)" }}>StepPool</div>
+            <div className="num text-lg font-bold leading-tight">Admin</div>
+          </div>
+        </div>
         <nav className="flex md:flex-col gap-1 overflow-x-auto">
           {NAV.map((n) => {
             const active = n.href === "/admin" ? path === "/admin" : path.startsWith(n.href);

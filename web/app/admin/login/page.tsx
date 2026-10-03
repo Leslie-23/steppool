@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -54,6 +55,7 @@ export default function AdminLogin() {
   return (
     <main className="min-h-screen grid place-items-center px-4" style={{ background: "radial-gradient(60% 40% at 50% 0%, #d7ff3a1f, transparent 70%)" }}>
       <div className="w-full max-w-sm">
+        <Image src="/steppool-icon.svg" alt="StepPool" width={48} height={48} unoptimized className="rounded-xl mb-5" />
         <div className="label" style={{ color: "var(--volt)" }}>StepPool · Admin</div>
         <h1 className="num text-4xl font-bold mt-3 mb-8">{step === "email" ? "Sign in" : "Enter the code"}</h1>
         {step === "email" ? (

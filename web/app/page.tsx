@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 const POINTS = [
@@ -11,7 +12,10 @@ export default function Home() {
   return (
     <main className="min-h-screen px-4" style={{ background: "radial-gradient(70% 45% at 50% 0%, #d7ff3a22, transparent 70%)" }}>
       <div className="max-w-5xl mx-auto py-8 flex items-center justify-between">
-        <span className="num text-lg font-bold tracking-[0.25em]" style={{ color: "var(--volt)" }}>STEPPOOL</span>
+        <span className="flex items-center gap-3">
+          <Image src="/steppool-icon.svg" alt="" width={32} height={32} unoptimized className="rounded-lg" />
+          <span className="num text-lg font-bold tracking-[0.25em]" style={{ color: "var(--volt)" }}>STEPPOOL</span>
+        </span>
         <Link href="/admin" className="text-sm text-muted hover:text-ink">Admin</Link>
       </div>
       <section className="max-w-5xl mx-auto pt-16 pb-24">

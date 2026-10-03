@@ -1,4 +1,5 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet, TextInput, View } from 'react-native';
@@ -77,7 +78,10 @@ export default function SignInScreen() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={{ flex: 1, justifyContent: 'center' }}>
           <Animated.View entering={FadeInDown.duration(700).springify()}>
-            <T v="label" style={{ color: color.volt }}>StepPool</T>
+            <Row gap={space.sm}>
+              <Image source={require('@/assets/images/logo-mark.png')} style={{ width: 34, height: 34, borderRadius: 10 }} accessibilityLabel="StepPool" />
+              <T v="label" style={{ color: color.volt }}>StepPool</T>
+            </Row>
             <T v="hero" style={{ fontSize: 52, lineHeight: 56, marginTop: space.md }}>Walk.{'\n'}Hit your goal.{'\n'}Share the pool.</T>
           </Animated.View>
         </View>

@@ -38,3 +38,5 @@ server/node_modules/
 web-build/
 yarn-debug.*
 yarn-error.*
+server/.env
+.mongo/

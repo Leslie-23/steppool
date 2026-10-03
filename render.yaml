@@ -1,0 +1,75 @@
+# Render Blueprint: API (HTTP + Socket.IO), BullMQ worker, and Key Value (Redis).
+# MongoDB is external (Atlas): set MONGO_URL as a secret in the dashboard. Render has no managed Mongo.
+services:
+  - type: web
+    name: steppool-api
+    runtime: node
+    rootDir: server
+    plan: starter
+    region: frankfurt # closest Render region to Accra
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      - key: PUBLIC_URL
+        value: https://steppool.onrender.com
+      - key: MONGO_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_API_KEY
+        generateValue: true
+      - key: ARKESEL_API_KEY
+        sync: false
+      - key: APPLE_TEAM_ID
+        sync: false
+      - key: ANDROID_SHA256_FINGERPRINTS
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: steppool-redis
+          property: connectionString
+
+  - type: worker
+    name: steppool-worker
+    runtime: node
+    rootDir: server
+    plan: starter
+    region: frankfurt
+    buildCommand: npm ci && npm run build
+    startCommand: npm run worker
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      - key: MONGO_URL
+        sync: false
+      - key: JWT_SECRET
+        fromService:
+          type: web
+          name: steppool-api
+          envVarKey: JWT_SECRET
+      - key: ADMIN_API_KEY
+        fromService:
+          type: web
+          name: steppool-api
+          envVarKey: ADMIN_API_KEY
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: steppool-redis
+          property: connectionString
+
+  - type: keyvalue
+    name: steppool-redis
+    plan: starter
+    region: frankfurt
+    # BullMQ requires keys never be evicted.
+    maxmemoryPolicy: noeviction
+    ipAllowList: []

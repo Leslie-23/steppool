@@ -7,6 +7,7 @@ import { Button, Card, Row, Screen, T } from '@/components/ds/primitives';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { api } from '@/lib/api';
 import { haptic } from '@/lib/haptics';
+import { registerPush } from '@/lib/push';
 import { useSession } from '@/lib/session';
 import type { CreateChallengeBody } from '@/shared/contracts';
 import { challengeGoal } from '@/shared/goals';
@@ -39,6 +40,7 @@ export default function CreateChallenge() {
       haptic.success();
       api.me().then(setMe).catch(() => {});
       router.replace(`/challenge/${c.id}`);
+      setTimeout(() => registerPush({ prompt: true }).catch(() => {}), 1800);
     } catch (e) {
       haptic.error();
       setError((e as Error).message);

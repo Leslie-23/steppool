@@ -16,6 +16,7 @@ import { InviteCard, ResultCard } from '@/components/share/ShareCards';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { api } from '@/lib/api';
 import { haptic } from '@/lib/haptics';
+import { registerPush } from '@/lib/push';
 import { inviteUrl } from '@/lib/invite';
 import { useSession } from '@/lib/session';
 import { shareCard } from '@/lib/share';
@@ -92,6 +93,8 @@ export default function ArenaScreen() {
       setBurst((b) => b + 1);
       board.refresh();
       api.me().then(setMe).catch(() => {});
+      // Now that overtakes and "1 hour left" matter to them, ask for notifications.
+      setTimeout(() => registerPush({ prompt: true }).catch(() => {}), 1800);
     } catch (e) {
       haptic.error();
       toasts.push({ text: (e as Error).message, tone: 'muted', icon: 'xmark' });

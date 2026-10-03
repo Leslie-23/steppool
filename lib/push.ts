@@ -8,8 +8,11 @@ Notifications.setNotificationHandler({
   handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: false, shouldSetBadge: false }),
 });
 
-/** Asks for notification permission and hands the Expo push token to the server. */
-export async function registerPush() {
+/**
+ * Hands the Expo push token to the server. With `prompt`, asks for permission first; we only do that
+ * at a moment with obvious value (joining a challenge), never cold on launch.
+ */
+export async function registerPush({ prompt = false } = {}) {
   if (Platform.OS === 'web') return;
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('challenges', {
@@ -18,7 +21,8 @@ export async function registerPush() {
       lightColor: '#D7FF3A',
     });
   }
-  const { status } = await Notifications.requestPermissionsAsync();
+  const current = await Notifications.getPermissionsAsync();
+  const status = current.status === 'granted' || !prompt ? current.status : (await Notifications.requestPermissionsAsync()).status;
   if (status !== 'granted') return;
   const projectId = Constants.expoConfig?.extra?.eas?.projectId as string | undefined;
   // Without an EAS project id (before `eas init`) there is no push token to fetch.

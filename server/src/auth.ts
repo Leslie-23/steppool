@@ -11,7 +11,7 @@ import { HttpError } from './errors.js';
 import { account, inTransaction, transfer } from './ledger.js';
 import { User, type UserDoc } from './models.js';
 import { redis } from './redis.js';
-import { sendSms } from './sms.js';
+import { mailEnabled, sendOtpEmail } from './mailer.js';
 import { toMe } from './views.js';
 
 const ACCESS_TTL = '15m';
@@ -19,7 +19,7 @@ const REFRESH_TTL = '30d';
 const OTP_TTL_S = 300;
 const OTP_MAX_ATTEMPTS = 5;
 
-const Phone = z.string().regex(/^\+233\d{9}$/, 'Use a Ghana number');
+const Email = z.string().trim().toLowerCase().email('Enter a valid email address').max(254);
 
 type AccessClaims = { sub: string; typ: 'access' };
 type RefreshClaims = { sub: string; typ: 'refresh'; tv: number };
@@ -71,38 +71,45 @@ export async function limit(key: string, max: number, windowS: number) {
   if (n > max) throw new HttpError(429, 'Too many attempts. Try again shortly.');
 }
 
-const hash = (phone: string, code: string) => createHash('sha256').update(`${phone}:${code}:${config.jwtSecret}`).digest('hex');
+const hash = (email: string, code: string) => createHash('sha256').update(`${email}:${code}:${config.jwtSecret}`).digest('hex');
 
 export const authRouter = Router();
 
 authRouter.post('/otp', async (req, res) => {
-  const phone = Phone.parse(req.body?.phone);
-  await limit(`otp:phone:${phone}`, 5, 3600);
+  const email = Email.parse(req.body?.email);
+  await limit(`otp:email:${email}`, 5, 3600);
   await limit(`otp:ip:${req.ip}`, 20, 3600);
   const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
-  await redis().set(`otp:${phone}`, JSON.stringify({ h: hash(phone, code), n: 0 }), 'EX', OTP_TTL_S);
-  if (config.arkeselKey) await sendSms(phone, `Your StepPool code is ${code}. It expires in 5 minutes.`);
+  await redis().set(`otp:${email}`, JSON.stringify({ h: hash(email, code), n: 0 }), 'EX', OTP_TTL_S);
+  if (mailEnabled()) {
+    await sendOtpEmail(email, code).catch((e) => {
+      console.error('otp email failed', e);
+      throw new HttpError(502, "We couldn't send the email. Try again in a moment.");
+    });
+  } else if (config.production) {
+    throw new HttpError(503, 'Sign-in email is not configured');
+  }
   res.json(config.otpInResponse ? { devCode: code } : {});
 });
 
 authRouter.post('/verify', async (req, res) => {
-  const { phone, code } = z.object({ phone: Phone, code: z.string().regex(/^\d{6}$/) }).parse(req.body);
-  const key = `otp:${phone}`;
+  const { email, code } = z.object({ email: Email, code: z.string().regex(/^\d{6}$/) }).parse(req.body);
+  const key = `otp:${email}`;
   const raw = await redis().get(key);
   if (!raw) throw new HttpError(400, 'Code expired. Request a new one.');
   const entry = JSON.parse(raw) as { h: string; n: number };
   if (entry.n >= OTP_MAX_ATTEMPTS) throw new HttpError(429, 'Too many attempts. Request a new code.');
-  if (entry.h !== hash(phone, code)) {
+  if (entry.h !== hash(email, code)) {
     await redis().set(key, JSON.stringify({ ...entry, n: entry.n + 1 }), 'KEEPTTL');
     throw new HttpError(400, 'Wrong code');
   }
   await redis().del(key);
 
-  let user = await User.findOne({ phone });
+  let user = await User.findOne({ email });
   const isNew = !user;
   if (!user) {
     user = await inTransaction(async (session) => {
-      const [created] = await User.create([{ phone }], { session });
+      const [created] = await User.create([{ email }], { session });
       await transfer(session, { from: account.mint, to: account.user(created._id), amount: SIGNUP_CREDITS, kind: 'signup_grant' });
       return created;
     });

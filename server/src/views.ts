@@ -3,7 +3,7 @@ import type { ChallengeSummary, LeaderboardRow, Me } from '../../shared/contract
 import type { ChallengeDoc, ParticipantDoc, UserDoc } from './models.js';
 
 export function toMe(u: UserDoc): Me {
-  return { id: String(u._id), phone: u.phone, name: u.name ?? '', avatar: u.avatar ?? undefined, baselineDaily: u.baselineDaily ?? 0, credits: u.credits ?? 0 };
+  return { id: String(u._id), email: u.email, phone: u.phone ?? undefined, name: u.name ?? '', avatar: u.avatar ?? undefined, baselineDaily: u.baselineDaily ?? 0, credits: u.credits ?? 0 };
 }
 
 export function toSummary(c: ChallengeDoc, poolCredits: number, me?: { p: ParticipantDoc; rank: number }): ChallengeSummary {

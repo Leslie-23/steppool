@@ -58,8 +58,8 @@ async function request<T>(method: string, path: string, body?: unknown, retried 
 type Tokens = { access: string; refresh: string };
 
 export const api = {
-  requestOtp: (phone: string) => request<{ devCode?: string }>('POST', '/auth/otp', { phone }),
-  verifyOtp: (phone: string, code: string) => request<{ tokens: Tokens; me: Me; isNew: boolean }>('POST', '/auth/verify', { phone, code }),
+  requestOtp: (email: string) => request<{ devCode?: string }>('POST', '/auth/otp', { email }),
+  verifyOtp: (email: string, code: string) => request<{ tokens: Tokens; me: Me; isNew: boolean }>('POST', '/auth/verify', { email, code }),
   me: () => request<Me>('GET', '/me'),
   updateMe: (patch: { name?: string; avatar?: string; pushToken?: string }) => request<Me>('PATCH', '/me', patch),
   ingest: (body: IngestBody) => request<{ accepted: number; todaySteps: number }>('POST', '/steps/ingest', body),

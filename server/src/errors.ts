@@ -14,7 +14,7 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
     return;
   }
   const status = (err as { status?: number }).status;
-  if (typeof status === 'number' && status >= 400 && status < 500) {
+  if (typeof status === 'number' && ((status >= 400 && status < 500) || err instanceof HttpError)) {
     res.status(status).json({ error: (err as Error).message });
     return;
   }

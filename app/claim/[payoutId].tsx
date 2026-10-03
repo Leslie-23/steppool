@@ -16,7 +16,7 @@ type Network = 'mtn' | 'telecel' | 'airteltigo';
 export default function ClaimPrize() {
   const { payoutId } = useLocalSearchParams<{ payoutId: string }>();
   const me = useSession((s) => s.me);
-  const [number, setNumber] = useState(me?.phone.replace('+233', '0') ?? '');
+  const [number, setNumber] = useState(me?.phone?.replace('+233', '0') ?? '');
   const [network, setNetwork] = useState<Network>('mtn');
   const [busy, setBusy] = useState(false);
   const e164 = toE164(number);

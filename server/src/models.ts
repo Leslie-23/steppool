@@ -4,7 +4,9 @@ const opts = { timestamps: true, versionKey: false } as const;
 
 const UserSchema = new Schema(
   {
-    phone: { type: String, required: true, unique: true },
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    /** MoMo number, captured when a prize is claimed. */
+    phone: String,
     name: { type: String, default: '' },
     avatar: String,
     baselineDaily: { type: Number, default: 0 },

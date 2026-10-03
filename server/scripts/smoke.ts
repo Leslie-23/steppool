@@ -23,9 +23,9 @@ async function call<T>(method: string, path: string, body?: unknown, token?: str
   return res.json() as Promise<T>;
 }
 
-async function signUp(phone: string, name: string) {
-  const { devCode } = await call<{ devCode: string }>('POST', '/auth/otp', { phone });
-  const { tokens } = await call<{ tokens: { access: string } }>('POST', '/auth/verify', { phone, code: devCode });
+async function signUp(email: string, name: string) {
+  const { devCode } = await call<{ devCode: string }>('POST', '/auth/otp', { email });
+  const { tokens } = await call<{ tokens: { access: string } }>('POST', '/auth/verify', { email, code: devCode });
   await call('PATCH', '/me', { name }, tokens.access);
   return tokens.access;
 }
@@ -37,8 +37,8 @@ const check = (ok: boolean, label: string) => {
 
 await mongoose.connect(config.mongoUrl);
 const stamp = String(Date.now()).slice(-6);
-const ama = await signUp(`+233200${stamp}`, 'Ama Smoke');
-const kofi = await signUp(`+233201${stamp}`, 'Kofi Smoke');
+const ama = await signUp(`ama${stamp}@example.com`, 'Ama Smoke');
+const kofi = await signUp(`kofi${stamp}@example.com`, 'Kofi Smoke');
 check(true, 'signed up two users');
 
 const c = await call<{ id: string; inviteCode: string }>('POST', '/challenges', { name: 'Smoke Walk', durationHours: 48, entryCredits: 100, visibility: 'private' }, ama);

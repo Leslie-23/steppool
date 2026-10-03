@@ -15,8 +15,9 @@ export const config = {
   jwtSecret: required('JWT_SECRET', 'dev-secret'),
   adminKey: required('ADMIN_API_KEY', 'dev-admin'),
   publicUrl: env.PUBLIC_URL ?? 'http://localhost:4000',
-  arkeselKey: env.ARKESEL_API_KEY || undefined,
-  smsSender: env.SMS_SENDER ?? 'StepPool',
+  /** Gmail account + app password used to email sign-in codes. */
+  mailUser: env.MAIL_USER || undefined,
+  mailPass: env.MAIL_APP_PASSWORD?.replace(/\s+/g, '') || undefined,
   /** Return OTP codes in the API response. Never in production. */
   otpInResponse: env.NODE_ENV !== 'production',
   extraTrustedSources: (env.EXTRA_TRUSTED_SOURCES ?? '').split(',').map((s) => s.trim()).filter(Boolean),

@@ -75,5 +75,5 @@ curl -X POST $API/admin/challenges -H "x-admin-key: $ADMIN_API_KEY" -H 'content-
 ## Deploy (Render)
 
 1. Create a MongoDB Atlas cluster and copy its connection string.
-2. Render → New → Blueprint → this repo. Set `MONGO_URL` on both services, and `ARKESEL_API_KEY` for real SMS.
+2. Render → New → Blueprint → this repo. Set `MONGO_URL` on both services, and `MAIL_USER` / `MAIL_APP_PASSWORD` (Gmail app password) for sign-in emails.
 3. Set `APPLE_TEAM_ID` and `ANDROID_SHA256_FINGERPRINTS` so `/j/CODE` invite links open the app.

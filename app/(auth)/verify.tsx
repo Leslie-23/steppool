@@ -13,7 +13,7 @@ import { color, radius, space, type } from '@/theme/tokens';
 const LEN = 6;
 
 export default function VerifyScreen() {
-  const { phone, devCode } = useLocalSearchParams<{ phone: string; devCode?: string }>();
+  const { email, devCode } = useLocalSearchParams<{ email: string; devCode?: string }>();
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const input = useRef<TextInput>(null);
@@ -26,7 +26,7 @@ export default function VerifyScreen() {
     if (code.length !== LEN || busy) return;
     setBusy(true);
     api
-      .verifyOtp(phone, code)
+      .verifyOtp(email, code)
       .then(async ({ tokens, me }) => {
         haptic.success();
         await signIn(tokens, me);
@@ -37,14 +37,14 @@ export default function VerifyScreen() {
         setCode('');
       })
       .finally(() => setBusy(false));
-  }, [code, busy, phone, signIn, shake]);
+  }, [code, busy, email, signIn, shake]);
 
   return (
     <Screen>
       <View style={{ flex: 1, justifyContent: 'center', gap: space.xxl }}>
         <View style={{ gap: space.sm }}>
           <T v="title">Enter the code</T>
-          <T v="caption">Sent to {phone}</T>
+          <T v="caption">Sent to {email}. Check spam if it isn't there in a minute.</T>
           {devCode ? <T v="caption" style={{ color: color.volt }}>Dev code: {devCode}</T> : null}
         </View>
         <Pressable onPress={() => input.current?.focus()}>
@@ -64,12 +64,12 @@ export default function VerifyScreen() {
           }}
           keyboardType="number-pad"
           textContentType="oneTimeCode"
-          autoComplete="sms-otp"
+          autoComplete="one-time-code"
           autoFocus
           style={styles.hidden}
         />
         <Pressable onPress={() => router.back()}>
-          <T v="caption" style={{ textAlign: 'center' }}>Wrong number? Go back</T>
+          <T v="caption" style={{ textAlign: 'center' }}>Wrong email? Go back</T>
         </Pressable>
       </View>
     </Screen>

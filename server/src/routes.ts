@@ -96,5 +96,6 @@ payoutsRouter.post('/:id/claim', async (req, res) => {
     { returnDocument: 'after' },
   );
   if (!p) throw new HttpError(404, 'Nothing to claim');
+  await User.updateOne({ _id: req.userId }, { $set: { phone: body.momoNumber } });
   res.json({ id: String(p._id), challengeId: String(p.challengeId), challengeName: '', kind: p.kind, amount: p.amount, prizeDescription: p.prizeDescription, status: p.status });
 });

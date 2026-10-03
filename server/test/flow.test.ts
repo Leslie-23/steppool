@@ -30,11 +30,11 @@ afterAll(async () => {
   redis().disconnect();
 });
 
-let phoneSeq = 200000000;
+let userSeq = 0;
 async function signUp(name: string) {
-  const phone = `+233${phoneSeq++}`;
-  const { body: otp } = await request(app).post('/auth/otp').send({ phone }).expect(200);
-  const { body } = await request(app).post('/auth/verify').send({ phone, code: otp.devCode }).expect(200);
+  const email = `walker${userSeq++}@example.com`;
+  const { body: otp } = await request(app).post('/auth/otp').send({ email }).expect(200);
+  const { body } = await request(app).post('/auth/verify').send({ email, code: otp.devCode }).expect(200);
   const auth = { authorization: `Bearer ${body.tokens.access}` };
   await request(app).patch('/me').set(auth).send({ name }).expect(200);
   return { auth, id: body.me.id as string };
@@ -208,16 +208,17 @@ describe('sponsored challenge', () => {
 
 describe('auth', () => {
   it('rejects wrong codes and locks out after repeated attempts', async () => {
-    const phone = '+233599999999';
-    await request(app).post('/auth/otp').send({ phone }).expect(200);
-    for (let i = 0; i < 5; i++) await request(app).post('/auth/verify').send({ phone, code: '000000' }).expect(400);
-    await request(app).post('/auth/verify').send({ phone, code: '000000' }).expect(429);
+    const email = 'lockout@example.com';
+    await request(app).post('/auth/otp').send({ email }).expect(200);
+    for (let i = 0; i < 5; i++) await request(app).post('/auth/verify').send({ email, code: '000000' }).expect(400);
+    await request(app).post('/auth/verify').send({ email, code: '000000' }).expect(429);
   });
 
   it('refreshes tokens', async () => {
-    const phone = '+233588888888';
-    const { body: otp } = await request(app).post('/auth/otp').send({ phone });
-    const { body } = await request(app).post('/auth/verify').send({ phone, code: otp.devCode });
+    const email = 'Refresh.Me@Example.com '; // normalised to lowercase, trimmed
+    const { body: otp } = await request(app).post('/auth/otp').send({ email });
+    const { body } = await request(app).post('/auth/verify').send({ email: 'refresh.me@example.com', code: otp.devCode });
+    expect(body.me.email).toBe('refresh.me@example.com');
     const { body: fresh } = await request(app).post('/auth/refresh').send({ refresh: body.tokens.refresh }).expect(200);
     await request(app).get('/me').set({ authorization: `Bearer ${fresh.access}` }).expect(200);
   });

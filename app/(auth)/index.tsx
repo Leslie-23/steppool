@@ -6,22 +6,24 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Button, Row, Screen, T } from '@/components/ds/primitives';
 import { api } from '@/lib/api';
 import { haptic } from '@/lib/haptics';
-import { toE164 } from '@/lib/phone';
 import { color, font, radius, space } from '@/theme/tokens';
 
-export default function PhoneScreen() {
-  const [phone, setPhone] = useState('');
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+export default function EmailScreen() {
+  const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const e164 = toE164(phone);
+  const clean = email.trim().toLowerCase();
+  const valid = EMAIL.test(clean);
 
   const submit = async () => {
-    if (!e164) return;
+    if (!valid) return;
     setBusy(true);
     setError(null);
     try {
-      const { devCode } = await api.requestOtp(e164);
-      router.push({ pathname: '/verify', params: { phone: e164, devCode: devCode ?? '' } });
+      const { devCode } = await api.requestOtp(clean);
+      router.push({ pathname: '/verify', params: { email: clean, devCode: devCode ?? '' } });
     } catch (e) {
       haptic.error();
       setError((e as Error).message);
@@ -39,20 +41,23 @@ export default function PhoneScreen() {
             <T v="hero" style={{ fontSize: 52, lineHeight: 54, marginTop: space.md }}>Walk.{'\n'}Hit your goal.{'\n'}Share the pool.</T>
           </Animated.View>
           <Animated.View entering={FadeInDown.delay(150).duration(700).springify()} style={{ gap: space.md }}>
-            <T v="label">Your phone number</T>
+            <T v="label">Your email</T>
             <Row style={styles.field} gap={space.md}>
-              <T v="heading" style={{ color: color.muted }}>🇬🇭 +233</T>
               <TextInput
-                value={phone}
+                value={email}
                 onChangeText={(t) => {
-                  setPhone(t);
+                  setEmail(t);
                   setError(null);
                 }}
-                placeholder="24 123 4567"
+                placeholder="you@example.com"
                 placeholderTextColor={color.faint}
-                keyboardType="phone-pad"
+                keyboardType="email-address"
+                textContentType="emailAddress"
+                autoComplete="email"
+                autoCapitalize="none"
+                autoCorrect={false}
                 autoFocus
-                maxLength={13}
+                maxLength={254}
                 style={styles.input}
                 selectionColor={color.volt}
                 onSubmitEditing={submit}
@@ -62,7 +67,7 @@ export default function PhoneScreen() {
           </Animated.View>
         </View>
         <View style={{ paddingBottom: space.xl, gap: space.md }}>
-          <Button label={busy ? 'Sending code…' : 'Continue'} onPress={submit} disabled={!e164 || busy} />
+          <Button label={busy ? 'Sending code…' : 'Continue'} onPress={submit} disabled={!valid || busy} />
           <T v="caption" style={{ textAlign: 'center', fontSize: 11 }}>Free to play. No deposits, no betting.</T>
         </View>
       </KeyboardAvoidingView>
@@ -72,5 +77,5 @@ export default function PhoneScreen() {
 
 const styles = StyleSheet.create({
   field: { backgroundColor: color.surface, borderRadius: radius.md, paddingHorizontal: space.lg, height: 64, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
-  input: { flex: 1, fontFamily: font.display, fontSize: 24, color: color.text, letterSpacing: 1 },
+  input: { flex: 1, fontFamily: font.displayMedium, fontSize: 20, color: color.text },
 });

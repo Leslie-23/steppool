@@ -98,7 +98,8 @@ export interface ChallengeResults {
 
 export interface Me {
   id: string;
-  phone: string;
+  email: string;
+  phone?: string;
   name: string;
   avatar?: string;
   baselineDaily: number;

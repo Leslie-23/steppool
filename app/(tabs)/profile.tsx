@@ -26,7 +26,7 @@ export default function ProfileScreen() {
         <View style={{ alignItems: 'center', gap: space.md, marginTop: space.xxl }}>
           <Avatar name={me?.name ?? '?'} size={88} ring={color.volt} />
           <T v="title">{me?.name}</T>
-          <T v="caption">{me?.phone}</T>
+          <T v="caption">{me?.email}</T>
         </View>
 
         <Row gap={space.md}>

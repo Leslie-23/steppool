@@ -1,6 +1,6 @@
 // Seeds a believable demo world for screenshots and manual testing.
 //   MONGO_URL=... REDIS_URL=... STEPPOOL_DISABLE_QUEUE=1 npx tsx scripts/seed-demo.ts
-// Then sign in on a dev build with: steppool://dev-login?phone=%2B233240000001
+// Then sign in on a dev build with: steppool://dev-login?email=leslie@example.com
 import mongoose, { type Types } from 'mongoose';
 
 import type { StepSample } from '../../shared/contracts.js';
@@ -66,7 +66,7 @@ await connectDb(config.mongoUrl);
 
 const ids: string[] = [];
 for (const [i, [name]] of PEOPLE.entries()) {
-  const u = await User.create({ phone: `+2332400000${String(i + 1).padStart(2, '0')}`, name });
+  const u = await User.create({ email: i === 0 ? 'leslie@example.com' : `walker${i}@example.com`, name });
   await inTransaction((s) => transfer(s, { from: account.mint, to: account.user(u._id as Types.ObjectId), amount: 1000, kind: 'signup_grant' }));
   ids.push(String(u._id));
 }
@@ -92,7 +92,7 @@ for (const [i, [, scale]] of PEOPLE.entries()) await upload(ids[i], walking(hist
 
 const me = await User.findById(ids[0]).lean();
 console.log(`Seeded ${ids.length} walkers. Leslie: ${me?.credits} credits, baseline ${me?.baselineDaily}/day.`);
-console.log('Sign in: steppool://dev-login?phone=%2B233240000001');
+console.log('Sign in: steppool://dev-login?email=leslie@example.com');
 await new Promise((r) => setTimeout(r, 500));
 await mongoose.disconnect();
 redis().disconnect();

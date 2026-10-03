@@ -78,7 +78,7 @@ const users: { id: string; persona: Persona }[] = [];
 let n = 0;
 for (const [persona, count] of MIX) {
   for (let i = 0; i < count; i++) {
-    const u = await User.create({ phone: `+2332${String(n).padStart(8, '0')}`, name: `${persona} ${i + 1}` });
+    const u = await User.create({ email: `sim${n}@example.com`, name: `${persona} ${i + 1}` });
     await inTransaction((s) => transfer(s, { from: account.mint, to: account.user(u._id), amount: 1000, kind: 'signup_grant' }));
     users.push({ id: String(u._id), persona });
     n++;

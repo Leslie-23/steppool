@@ -3,7 +3,8 @@
 // once GOOGLE_IOS_URL_SCHEME is set (the "reversed client id" from Google Cloud, e.g.
 // com.googleusercontent.apps.1234-abcd). Until then the app simply hides the Google button.
 module.exports = ({ config }) => {
-  const scheme = process.env.GOOGLE_IOS_URL_SCHEME;
+  // Reversed iOS client id (public, not a secret). Override with GOOGLE_IOS_URL_SCHEME.
+  const scheme = process.env.GOOGLE_IOS_URL_SCHEME ?? 'com.googleusercontent.apps.1009173626527-5kg1gke7bt4j5c8165vv9jalht16r0fl';
   return {
     ...config,
     plugins: [...config.plugins, ...(scheme ? [['@react-native-google-signin/google-signin', { iosUrlScheme: scheme }]] : [])],

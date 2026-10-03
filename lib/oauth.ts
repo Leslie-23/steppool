@@ -2,10 +2,11 @@ import { Platform } from 'react-native';
 
 import { api } from './api';
 
-// Google OAuth client ids from Google Cloud (APIs & Services → Credentials). The iOS one also needs
-// GOOGLE_IOS_URL_SCHEME at build time (see app.config.js). The web one is what Android ID tokens carry.
-const GOOGLE_IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
-const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+// Google OAuth client ids (Google Cloud project "step-pool" → Credentials). Client ids are public
+// identifiers, not secrets, so they ship as defaults; env vars override them per build. The iOS one
+// pairs with the URL scheme in app.config.js. The web one is what Android ID tokens carry.
+const GOOGLE_IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? '1009173626527-5kg1gke7bt4j5c8165vv9jalht16r0fl.apps.googleusercontent.com';
+const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '1009173626527-q7f0snkntnvu2ag4u4t6gb4t7jfairo9.apps.googleusercontent.com';
 
 export const googleEnabled = Platform.OS === 'ios' ? !!GOOGLE_IOS_CLIENT_ID : Platform.OS === 'android' ? !!GOOGLE_WEB_CLIENT_ID : false;
 

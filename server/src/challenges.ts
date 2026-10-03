@@ -3,7 +3,7 @@ import { randomInt } from 'node:crypto';
 import { Router } from 'express';
 import { Types } from 'mongoose';
 
-import { CreateChallengeBody, SponsorChallengeBody, type ChallengeResults } from '../../shared/contracts.js';
+import { CreateChallengeBody, INVITE_CODE_ALPHABET, INVITE_CODE_LENGTH, SponsorChallengeBody, type ChallengeResults } from '../../shared/contracts.js';
 import { challengeGoal, DEFAULT_MULTIPLIER } from '../../shared/goals.js';
 
 import { requireAdmin, requireUser } from './auth.js';
@@ -17,9 +17,8 @@ import { toSummary } from './views.js';
 
 const HOUR = 3_600_000;
 const SYNC_GRACE_MS = 2 * HOUR;
-const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O/1/I
 
-const newCode = () => Array.from({ length: 6 }, () => CODE_ALPHABET[randomInt(CODE_ALPHABET.length)]).join('');
+const newCode = () => Array.from({ length: INVITE_CODE_LENGTH }, () => INVITE_CODE_ALPHABET[randomInt(INVITE_CODE_ALPHABET.length)]).join('');
 const ceilHour = (t: number) => Math.ceil(t / HOUR) * HOUR;
 
 /** Late joiners are allowed for the first quarter of a challenge (max 24h). */

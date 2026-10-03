@@ -61,6 +61,21 @@ export default function ChallengesScreen() {
           </Animated.View>
         ))}
 
+        <Press onPress={() => router.push('/code')} accessibilityRole="button" accessibilityLabel="Have a code? Join a friend's challenge">
+          <Card tone="volt">
+            <Row gap={space.md}>
+              <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: color.voltDim, alignItems: 'center', justifyContent: 'center' }}>
+                <IconSymbol name="ticket.fill" size={20} color={color.volt} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <T v="heading" style={{ fontSize: 16 }}>Have a code?</T>
+                <T v="caption">Join a friend's challenge with its 6-character code.</T>
+              </View>
+              <IconSymbol name="chevron.right" size={16} color={color.muted} />
+            </Row>
+          </Card>
+        </Press>
+
         <Section title="You're in" items={mine} offset={1} />
 
         <Press onPress={() => router.push('/challenge/create')}>

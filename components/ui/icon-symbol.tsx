@@ -34,6 +34,7 @@ const MAPPING = {
   'minus': 'remove',
   'xmark': 'close',
   'link': 'link',
+  'ticket.fill': 'confirmation-number',
   'square.and.arrow.up': 'ios-share',
   'arrow.up.right': 'north-east',
   'arrow.up': 'arrow-upward',

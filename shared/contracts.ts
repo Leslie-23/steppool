@@ -155,4 +155,7 @@ export interface ClientToServer {
 }
 
 export const SIGNUP_CREDITS = 1000;
+/** Invite codes: 6 characters, no look-alikes (0/O, 1/I). */
+export const INVITE_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+export const INVITE_CODE_LENGTH = 6;
 export const DAY_MS = 86_400_000;

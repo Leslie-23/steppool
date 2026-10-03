@@ -63,8 +63,8 @@ export default function SignInScreen() {
     setBusy('email');
     setError(null);
     try {
-      const { devCode } = await api.requestOtp(clean);
-      router.push({ pathname: '/verify', params: { email: clean, devCode: devCode ?? '' } });
+      await api.requestOtp(clean);
+      router.push({ pathname: '/verify', params: { email: clean } });
     } catch (e) {
       haptic.error();
       setError((e as Error).message);

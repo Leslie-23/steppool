@@ -111,6 +111,8 @@ authRouter.post('/otp', async (req, res) => {
     });
   } else if (config.production) {
     throw new HttpError(503, 'Sign-in email is not configured');
+  } else {
+    console.log(`[dev] sign-in code for ${email}: ${code}`); // local only: no email configured
   }
   res.json(config.otpInResponse ? { devCode: code } : {});
 });

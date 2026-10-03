@@ -16,15 +16,13 @@ export default function AdminLogin() {
   const [step, setStep] = useState<"email" | "code">("email");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [devCode, setDevCode] = useState<string | null>(null);
 
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
     setError(null);
     try {
-      const res = await api<{ devCode?: string }>("/auth/otp", { method: "POST", body: { email } });
-      setDevCode(res.devCode ?? null);
+      await api("/auth/otp", { method: "POST", body: { email } });
       setStep("code");
     } catch (err) {
       setError((err as Error).message);
@@ -65,7 +63,7 @@ export default function AdminLogin() {
           </form>
         ) : (
           <form onSubmit={verify} className="space-y-3">
-            <p className="text-sm text-muted">Sent to {email}.{devCode ? <span className="text-volt"> Dev code: {devCode}</span> : null}</p>
+            <p className="text-sm text-muted">Sent to {email}. Check spam if it isn&apos;t there in a minute.</p>
             <input className="input h-14 num text-2xl tracking-[0.5em] text-center" inputMode="numeric" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} autoFocus required />
             <button className="btn btn-volt w-full h-12" disabled={busy || code.length !== 6}>{busy ? "Checking…" : "Sign in"}</button>
             <button type="button" className="text-sm text-muted w-full" onClick={() => setStep("email")}>Use a different email</button>

@@ -82,7 +82,6 @@ export default function HealthPrimer() {
         ) : (
           <Button label={busy ? 'Connecting…' : `Connect ${source}`} onPress={connect} disabled={busy || !availability} />
         )}
-        {__DEV__ ? <Button label="Skip (dev only)" tone="ghost" onPress={() => setHealthGranted(true)} /> : null}
       </View>
     </Screen>
   );

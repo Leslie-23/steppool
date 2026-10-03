@@ -7,12 +7,12 @@ import { Screen, T } from '@/components/ds/primitives';
 import { api } from '@/lib/api';
 import { haptic } from '@/lib/haptics';
 import { useSession } from '@/lib/session';
-import { color, space } from '@/theme/tokens';
+import { space } from '@/theme/tokens';
 
 const LEN = 6;
 
 export default function VerifyScreen() {
-  const { email, devCode } = useLocalSearchParams<{ email: string; devCode?: string }>();
+  const { email } = useLocalSearchParams<{ email: string }>();
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const cells = useRef<CodeCellsHandle>(null);
@@ -40,7 +40,6 @@ export default function VerifyScreen() {
         <View style={{ gap: space.sm }}>
           <T v="title">Enter the code</T>
           <T v="caption">Sent to {email}. Check spam if it isn't there in a minute.</T>
-          {devCode ? <T v="caption" style={{ color: color.volt }}>Dev code: {devCode}</T> : null}
         </View>
         <CodeCells
           ref={cells}

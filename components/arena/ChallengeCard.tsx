@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
 
+import { Coin, CoinAmount } from '@/components/ds/Coin';
 import { Countdown } from '@/components/ds/Countdown';
 import { Sparkles } from '@/components/ds/Particles';
 import { Card, Pill, Press, Row, T } from '@/components/ds/primitives';
@@ -88,12 +89,17 @@ export function ChallengeCard({ c }: { c: ChallengeSummary }) {
         <T v="heading" style={{ marginTop: space.md }}>{c.name}</T>
         <Row style={{ marginTop: space.md, justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <View>
-            <T v="label">Pool</T>
-            <T style={[type.num, { fontSize: 24, color: color.gold }]}>{c.poolCredits.toLocaleString()} <T v="caption">cr</T></T>
+            <T v="label">{c.kind === 'sponsored' ? 'Prize' : 'Pool'}</T>
+            {/* Sponsored prizes are cash from the sponsor, not credits. */}
+            {c.kind === 'sponsored' ? (
+              <T style={[type.num, { fontSize: 22, color: color.gold }]}>GH₵{(c.sponsor?.prizeValueGhs ?? 0).toLocaleString()}</T>
+            ) : (
+              <CoinAmount value={c.poolCredits} size={22} />
+            )}
           </View>
           <View style={{ alignItems: 'flex-end' }}>
             <T v="label">Entry</T>
-            <T style={[type.num, { fontSize: 18 }]}>{c.entryCredits ? `${c.entryCredits} cr` : 'Free'}</T>
+            {c.entryCredits ? <CoinAmount value={c.entryCredits} tone="silver" size={17} /> : <T style={[type.num, { fontSize: 18 }]}>Free</T>}
           </View>
           <View style={{ alignItems: 'flex-end' }}>
             <T v="label">Players</T>

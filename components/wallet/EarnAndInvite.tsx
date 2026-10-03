@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, Share, StyleSheet, TextInput, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
+import { Coin } from '@/components/ds/Coin';
 import { Card, Row, T } from '@/components/ds/primitives';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { api } from '@/lib/api';
@@ -64,7 +65,10 @@ export function EarnAndInvite({ onRedeemed }: { onRedeemed: () => void }) {
             <View style={styles.icon}>
               <IconSymbol name={w.icon} size={15} color={color.gold} />
             </View>
-            <T style={[type.num, { fontSize: 16, width: 48 }]}>{w.amount}</T>
+            <View style={{ width: 70, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Coin size={15} />
+              <T style={[type.num, { fontSize: 16 }]}>{w.amount}</T>
+            </View>
             <T v="caption" style={{ flex: 1, color: color.text }}>{w.text}</T>
           </Row>
         ))}

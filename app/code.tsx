@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
 
+import { Coin, CoinAmount } from '@/components/ds/Coin';
 import { CodeCells, type CodeCellsHandle } from '@/components/ds/CodeCells';
 import { Button, Card, Pill, Row, Screen, T } from '@/components/ds/primitives';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -125,13 +126,15 @@ export default function EnterCode() {
                 <Row style={{ justifyContent: 'space-between' }}>
                   <View>
                     <T v="label">{sponsored ? 'Prize' : 'Pool'}</T>
-                    <T style={[type.num, { fontSize: 22, color: color.gold }]}>
-                      {sponsored ? `GH₵${found.sponsor?.prizeValueGhs.toLocaleString()}` : `${found.poolCredits.toLocaleString()} cr`}
-                    </T>
+                    {sponsored ? (
+                      <T style={[type.num, { fontSize: 22, color: color.gold }]}>GH₵{found.sponsor?.prizeValueGhs.toLocaleString()}</T>
+                    ) : (
+                      <CoinAmount value={found.poolCredits} size={20} />
+                    )}
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
                     <T v="label">Entry</T>
-                    <T style={[type.num, { fontSize: 18 }]}>{found.entryCredits ? `${found.entryCredits} cr` : 'Free'}</T>
+                    {found.entryCredits ? <CoinAmount value={found.entryCredits} tone="silver" size={17} /> : <T style={[type.num, { fontSize: 18 }]}>Free</T>}
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
                     <T v="label">Walking</T>

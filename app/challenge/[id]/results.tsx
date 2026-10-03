@@ -4,6 +4,7 @@ import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native'
 import Animated, { FadeInDown, FadeInUp, ZoomIn } from 'react-native-reanimated';
 
 import { LeaderRow } from '@/components/arena/LeaderRow';
+import { Coin, CoinAmount } from '@/components/ds/Coin';
 import { Odometer } from '@/components/ds/Odometer';
 import { Burst } from '@/components/ds/Particles';
 import { Button, Card, Row, Screen, T } from '@/components/ds/primitives';
@@ -37,7 +38,7 @@ export default function Results() {
 
   if (!data) return <Screen>{null}</Screen>;
   const c = data.challenge;
-  const won = r?.wonCredits ? `+${r.wonCredits} cr` : r?.prize;
+  const won = r?.wonCredits ? `+${r.wonCredits} credits` : r?.prize;
 
   return (
     <Screen glow={r?.goalHit ? color.gold : color.volt}>
@@ -76,7 +77,12 @@ export default function Results() {
           <Row style={{ justifyContent: 'space-around' }}>
             <Stat label="Finishers" value={String(data.finishers)} />
             <Stat label="Players" value={String(c.players)} />
-            {data.perFinisher ? <Stat label="Each got" value={`${data.perFinisher} cr`} gold /> : null}
+            {data.perFinisher ? (
+              <View style={{ alignItems: 'center' }}>
+                <CoinAmount value={data.perFinisher} size={24} />
+                <T v="label">Each got</T>
+              </View>
+            ) : null}
           </Row>
         </Animated.View>
 

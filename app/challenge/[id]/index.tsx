@@ -6,6 +6,7 @@ import Animated, { FadeIn, FadeInDown, ZoomIn } from 'react-native-reanimated';
 import { LeaderRow } from '@/components/arena/LeaderRow';
 import { ToastStack, useToasts } from '@/components/arena/Toast';
 import { statusPill } from '@/components/arena/ChallengeCard';
+import { Coin } from '@/components/ds/Coin';
 import { Countdown } from '@/components/ds/Countdown';
 import { HoldButton } from '@/components/ds/HoldButton';
 import { Odometer } from '@/components/ds/Odometer';
@@ -159,9 +160,9 @@ export default function ArenaScreen() {
                 <T v="caption">{c.sponsor?.prizeDescription}</T>
               </>
             ) : (
-              <Row gap={6} style={{ alignItems: 'flex-end' }}>
+              <Row gap={8} style={{ alignItems: 'center' }}>
+                <Coin size={40} />
                 <Odometer value={c.poolCredits} size={48} color={color.gold} />
-                <T v="caption" style={{ marginBottom: 10 }}>credits</T>
               </Row>
             )}
             <T v="caption" style={{ marginTop: space.sm }}>
@@ -197,7 +198,7 @@ export default function ArenaScreen() {
             </Card>
             <HoldButton
               tone={sponsored ? 'gold' : 'volt'}
-              label={joining ? 'Joining…' : c.entryCredits ? `Hold to join · ${c.entryCredits} cr` : 'Hold to join · Free'}
+              label={joining ? 'Joining…' : c.entryCredits ? `Hold to join · ${c.entryCredits} credits` : 'Hold to join · Free'}
               holdingLabel="Locking you in…"
               onConfirm={join}
               disabled={joining || !canAfford}

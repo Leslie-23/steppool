@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
+import { CoinAmount, SpinningCoin } from '@/components/ds/Coin';
 import { Odometer } from '@/components/ds/Odometer';
 import { Card, Pill, Press, Row, Screen, T } from '@/components/ds/primitives';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -48,9 +49,10 @@ export default function WalletScreen() {
         }
       >
         <View style={{ marginTop: space.xxl, alignItems: 'center', gap: space.xs }}>
-          <T v="label">Balance</T>
+          <SpinningCoin size={84} />
+          <T v="label" style={{ marginTop: space.sm }}>Balance</T>
           <Odometer value={data?.balance ?? 0} size={72} color={color.gold} />
-          <T v="caption">credits · for challenge entries</T>
+          <T v="caption">credits to enter challenges with</T>
         </View>
 
         <EarnAndInvite onRedeemed={refresh} />
@@ -86,10 +88,7 @@ export default function WalletScreen() {
                   <T v="body">{LABEL[l.kind]}</T>
                   <T v="caption">{l.challengeName ?? l.note ?? new Date(l.at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</T>
                 </View>
-                <T style={[type.num, { fontSize: 17, color: l.amount > 0 ? color.gold : color.muted }]}>
-                  {l.amount > 0 ? '+' : ''}
-                  {l.amount.toLocaleString()}
-                </T>
+                <CoinAmount value={l.amount} tone={l.amount > 0 ? 'gold' : 'silver'} size={16} sign textStyle={l.amount > 0 ? undefined : { color: color.muted }} />
               </Row>
             </Animated.View>
           ))}

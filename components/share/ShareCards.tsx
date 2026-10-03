@@ -3,6 +3,7 @@ import { forwardRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 
+import { Coin } from '@/components/ds/Coin';
 import { inviteUrl } from '@/lib/invite';
 import type { ChallengeSummary } from '@/shared/contracts';
 import { color, font } from '@/theme/tokens';
@@ -36,8 +37,8 @@ export const InviteCard = forwardRef<View, { c: ChallengeSummary; from: string }
         <Text style={styles.title}>{c.name}</Text>
         {sponsored ? <Text style={[styles.small, { color: accent }]}>Presented by {c.sponsor?.name}</Text> : null}
         <View style={styles.stats}>
-          <Stat label={sponsored ? 'Prize' : 'Pool'} value={sponsored ? `GH₵${c.sponsor?.prizeValueGhs.toLocaleString()}` : `${c.poolCredits.toLocaleString()} cr`} accent={color.gold} />
-          <Stat label="Entry" value={c.entryCredits ? `${c.entryCredits} cr` : 'Free'} />
+          <Stat label={sponsored ? 'Prize' : 'Pool'} coin={sponsored ? undefined : 'gold'} value={sponsored ? `GH₵${c.sponsor?.prizeValueGhs.toLocaleString()}` : c.poolCredits.toLocaleString()} accent={color.gold} />
+          <Stat label="Entry" coin={c.entryCredits ? 'silver' : undefined} value={c.entryCredits ? String(c.entryCredits) : 'Free'} />
           <Stat label="Walking" value={String(c.players)} />
         </View>
         <View style={styles.qrWrap}>
@@ -77,11 +78,14 @@ export const ResultCard = forwardRef<View, { c: ChallengeSummary; name: string; 
   },
 );
 
-function Stat({ label, value, accent }: { label: string; value: string; accent?: string }) {
+function Stat({ label, value, accent, coin }: { label: string; value: string; accent?: string; coin?: 'gold' | 'silver' }) {
   return (
     <View style={{ flex: 1 }}>
       <Text style={styles.statLabel}>{label.toUpperCase()}</Text>
-      <Text style={[styles.statValue, accent ? { color: accent } : null]}>{value}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 }}>
+        {coin ? <Coin tone={coin} size={20} /> : null}
+        <Text style={[styles.statValue, { marginTop: 0 }, accent ? { color: accent } : null]}>{value}</Text>
+      </View>
     </View>
   );
 }

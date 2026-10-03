@@ -1,3 +1,4 @@
+import type React from 'react';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
@@ -8,7 +9,7 @@ import { spring } from '@/theme/motion';
 import { color, radius } from '@/theme/tokens';
 
 /** Segmented control with a sliding thumb. */
-export function Segmented<V extends string | number>({ options, value, onChange }: { options: { label: string; value: V }[]; value: V; onChange: (v: V) => void }) {
+export function Segmented<V extends string | number>({ options, value, onChange }: { options: { label: string; value: V; icon?: React.ReactNode }[]; value: V; onChange: (v: V) => void }) {
   const [w, setW] = useState(0);
   const idx = Math.max(0, options.findIndex((o) => o.value === value));
   const slot = w / options.length;
@@ -25,7 +26,10 @@ export function Segmented<V extends string | number>({ options, value, onChange 
             onChange(o.value);
           }}
         >
-          <T v="heading" style={{ fontSize: 14, color: o.value === value ? color.bg : color.muted }}>{o.label}</T>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+            {o.icon}
+            <T v="heading" style={{ fontSize: 14, color: o.value === value ? color.bg : color.muted }}>{o.label}</T>
+          </View>
         </Pressable>
       ))}
     </View>

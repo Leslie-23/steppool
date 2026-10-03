@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
+import { Coin, CoinAmount } from '@/components/ds/Coin';
 import { GoalSlider } from '@/components/ds/GoalSlider';
 import { Odometer } from '@/components/ds/Odometer';
 import { Segmented } from '@/components/ds/Segmented';
@@ -20,7 +21,7 @@ const DURATIONS = [
   { label: '7 days', value: 168 },
   { label: '30 days', value: 720 },
 ] as const;
-const ENTRIES = [0, 50, 100, 250].map((v) => ({ label: v ? `${v} cr` : 'Free', value: v }));
+const ENTRIES = [0, 50, 100, 250].map((v) => ({ label: v ? String(v) : 'Free', value: v, icon: v ? <Coin tone="silver" size={16} /> : undefined }));
 
 export default function CreateChallenge() {
   const me = useSession((s) => s.me);
@@ -129,7 +130,7 @@ export default function CreateChallenge() {
           {error ? <T v="caption" style={{ color: color.danger }}>{error}</T> : null}
         </ScrollView>
         <View style={{ paddingBottom: space.xl }}>
-          <Button label={busy ? 'Creating…' : entry ? `Create & enter · ${entry} cr` : 'Create challenge'} onPress={create} disabled={!valid || busy} />
+          <Button label={busy ? 'Creating…' : entry ? `Create & enter · ${entry} credits` : 'Create challenge'} onPress={create} disabled={!valid || busy} />
         </View>
       </KeyboardAvoidingView>
     </Screen>

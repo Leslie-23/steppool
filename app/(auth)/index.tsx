@@ -92,14 +92,23 @@ export default function SignInScreen() {
               onPress={() => !busy && withProvider('apple')}
             />
           ) : null}
-          {googleEnabled ? (
-            <Press onPress={() => !busy && withProvider('google')} style={[styles.provider, styles.google]} accessibilityRole="button" accessibilityLabel="Continue with Google">
+          {Platform.OS !== 'web' ? (
+            <Press
+              onPress={() => {
+                if (busy) return;
+                if (!googleEnabled) {
+                  haptic.error();
+                  setError('Google sign-in isn’t set up on this build yet. Use Apple or email for now.');
+                  return;
+                }
+                withProvider('google');
+              }} style={[styles.provider, styles.google]} accessibilityRole="button" accessibilityLabel="Continue with Google">
               {busy === 'google' ? <ActivityIndicator color={color.text} /> : <GoogleMark />}
               <T style={[type.heading, { fontSize: 17 }]}>Continue with Google</T>
             </Press>
           ) : null}
 
-          {apple || googleEnabled ? (
+          {Platform.OS !== 'web' ? (
             <Row gap={space.md} style={{ marginVertical: space.xs }}>
               <View style={styles.rule} />
               <T v="label" style={{ fontSize: 10 }}>or use email</T>

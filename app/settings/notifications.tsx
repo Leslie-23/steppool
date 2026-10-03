@@ -7,7 +7,7 @@ import { Button, Card, Row, Screen, T } from '@/components/ds/primitives';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { api } from '@/lib/api';
 import { haptic } from '@/lib/haptics';
-import { registerPush } from '@/lib/push';
+import { pushStatus, registerPush } from '@/lib/push';
 import { useSession } from '@/lib/session';
 import type { NotificationKind, NotificationPrefs } from '@/shared/contracts';
 import { color, space } from '@/theme/tokens';
@@ -29,8 +29,13 @@ export default function NotificationSettings() {
   const [status, setStatus] = useState<PushStatus>('undetermined');
   const [prefs, setPrefs] = useState<NotificationPrefs | undefined>(me?.notifPrefs);
 
+  const [diag, setDiag] = useState(pushStatus);
   const check = useCallback(() => {
-    Notifications.getPermissionsAsync().then((p) => setStatus(p.status as PushStatus));
+    Notifications.getPermissionsAsync().then((p) => {
+      setStatus(p.status as PushStatus);
+      // Already allowed: make sure this device's token is registered with the server.
+      if (p.status === 'granted') registerPush().catch(() => {}).finally(() => setDiag(pushStatus));
+    });
   }, []);
   useFocusEffect(check);
 
@@ -97,6 +102,7 @@ export default function NotificationSettings() {
             </Row>
           ))}
           <T v="caption" style={{ fontSize: 11, marginTop: space.sm }}>Switching one off only stops the push. It still appears in your inbox.</T>
+          {__DEV__ ? <T v="caption" style={{ fontSize: 10, marginTop: space.md, color: color.faint }}>dev · push: {diag}</T> : null}
         </View>
       </ScrollView>
     </Screen>

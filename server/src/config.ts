@@ -15,7 +15,11 @@ export const config = {
   jwtSecret: required('JWT_SECRET', 'dev-secret'),
   adminKey: required('ADMIN_API_KEY', 'dev-admin'),
   publicUrl: env.PUBLIC_URL ?? 'http://localhost:4000',
-  /** Gmail account + app password used to email sign-in codes. */
+  /** Resend (HTTPS email API). Preferred: Render's free plan blocks SMTP, so Gmail/nodemailer can't connect there. */
+  resendKey: env.RESEND_API_KEY || undefined,
+  /** Sender address. Resend's shared onboarding@resend.dev only delivers to your own account email until a domain is verified. */
+  mailFrom: env.MAIL_FROM ?? 'StepPool <onboarding@resend.dev>',
+  /** Gmail account + app password (SMTP fallback, e.g. local development). */
   mailUser: env.MAIL_USER || undefined,
   mailPass: env.MAIL_APP_PASSWORD?.replace(/\s+/g, '') || undefined,
   /** Emails that become admins when they sign in. */

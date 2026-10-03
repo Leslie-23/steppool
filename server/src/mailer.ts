@@ -10,13 +10,29 @@ function mailer() {
   return transport;
 }
 
-export const mailEnabled = () => !!(config.mailUser && config.mailPass);
+export const mailEnabled = () => !!config.resendKey || !!(config.mailUser && config.mailPass);
+
+type Mail = { to: string; subject: string; text: string; html: string };
+
+/** Resend over HTTPS (works where SMTP ports are blocked). */
+async function sendViaResend(m: Mail) {
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { authorization: `Bearer ${config.resendKey}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ from: config.mailFrom, to: [m.to], subject: m.subject, text: m.text, html: m.html }),
+  });
+  if (!res.ok) throw new Error(`Resend ${res.status}: ${await res.text()}`);
+}
+
+async function send(m: Mail) {
+  if (config.resendKey) return sendViaResend(m);
+  await mailer().sendMail({ from: `"StepPool" <${config.mailUser}>`, ...m });
+}
 
 /** Sends the sign-in code as a dark, on-brand email with a plain-text fallback. */
 export async function sendOtpEmail(to: string, code: string) {
   const spaced = code.split('').join(' ');
-  await mailer().sendMail({
-    from: `"StepPool" <${config.mailUser}>`,
+  await send({
     to,
     subject: `${code} is your StepPool code`,
     text: `Your StepPool sign-in code is ${code}. It expires in 5 minutes. If you didn't ask for it, ignore this email.`,

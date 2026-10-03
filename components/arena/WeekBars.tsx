@@ -29,7 +29,7 @@ function Bar({ label, ratio, hit, today, delay }: { label: string; ratio: number
   const anim = useAnimatedStyle(() => ({ height: h.value }));
   return (
     <View style={styles.col}>
-      <View style={{ height: H, justifyContent: 'flex-end' }}>
+      <View style={{ height: H, justifyContent: 'flex-end', alignSelf: 'stretch' }}>
         <Animated.View style={[styles.bar, { backgroundColor: hit ? color.volt : 'rgba(244,241,234,0.16)' }, today && styles.today, anim]} />
       </View>
       <T v="label" style={{ fontSize: 10, color: today ? color.text : color.faint }}>{label}</T>

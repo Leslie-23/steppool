@@ -1,7 +1,7 @@
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View, type PressableProps, type StyleProp, type TextProps, type ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, Text, View, type PressableProps, type StyleProp, type TextProps, type TextStyle, type ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -12,7 +12,11 @@ import { color, radius, space, type } from '@/theme/tokens';
 type Variant = keyof typeof type;
 
 export function T({ v = 'body', style, ...rest }: TextProps & { v?: Variant }) {
-  return <Text {...rest} style={[type[v], style]} />;
+  const flat = StyleSheet.flatten([type[v], style]) as TextStyle;
+  // A line box shorter than the font clips glyph tops on iOS. That happens when a caller bumps fontSize
+  // but inherits a variant's smaller lineHeight (body is 22), so never let it drop below what the size needs.
+  const lineHeight = flat.fontSize ? Math.max(flat.lineHeight ?? 0, Math.ceil(flat.fontSize * 1.2)) : flat.lineHeight;
+  return <Text {...rest} style={[flat, lineHeight ? { lineHeight } : null]} />;
 }
 
 /** Full-bleed screen with the ambient top glow. Every screen sits on this. */

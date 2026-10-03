@@ -115,6 +115,19 @@ export interface Analytics {
   challenges: { joined: number; finished: number; live: number; creditsWon: number; prizesWon: number };
 }
 
+export type NotificationKind = 'goal' | 'overtake' | 'reminder' | 'results' | 'joins';
+export type NotificationPrefs = Record<NotificationKind, boolean>;
+
+export interface InboxItem {
+  id: string;
+  kind: NotificationKind;
+  title: string;
+  body: string;
+  challengeId?: string;
+  read: boolean;
+  at: string;
+}
+
 export interface Me {
   id: string;
   email: string;
@@ -123,6 +136,9 @@ export interface Me {
   avatar?: string;
   baselineDaily: number;
   credits: number;
+  notifPrefs: NotificationPrefs;
+  /** Which sign-in methods are linked. */
+  providers: ('email' | 'apple' | 'google')[];
 }
 
 export interface LedgerLine {

@@ -3,7 +3,18 @@ import type { ChallengeSummary, LeaderboardRow, Me } from '../../shared/contract
 import type { ChallengeDoc, ParticipantDoc, UserDoc } from './models.js';
 
 export function toMe(u: UserDoc): Me {
-  return { id: String(u._id), email: u.email, phone: u.phone ?? undefined, name: u.name ?? '', avatar: u.avatar ?? undefined, baselineDaily: u.baselineDaily ?? 0, credits: u.credits ?? 0 };
+  const p = u.notifPrefs;
+  return {
+    id: String(u._id),
+    email: u.email,
+    phone: u.phone ?? undefined,
+    name: u.name ?? '',
+    avatar: u.avatar ?? undefined,
+    baselineDaily: u.baselineDaily ?? 0,
+    credits: u.credits ?? 0,
+    notifPrefs: { goal: p?.goal ?? true, overtake: p?.overtake ?? true, reminder: p?.reminder ?? true, results: p?.results ?? true, joins: p?.joins ?? true },
+    providers: ['email' as const, ...(u.appleSub ? (['apple'] as const) : []), ...(u.googleSub ? (['google'] as const) : [])],
+  };
 }
 
 export function toSummary(c: ChallengeDoc, poolCredits: number, me?: { p: ParticipantDoc; rank: number }): ChallengeSummary {

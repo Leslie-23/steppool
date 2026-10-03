@@ -16,11 +16,23 @@ const UserSchema = new Schema(
      */
     credits: { type: Number, default: 0 },
     pushToken: String,
+    appleSub: String,
+    googleSub: String,
+    notifPrefs: {
+      goal: { type: Boolean, default: true },
+      overtake: { type: Boolean, default: true },
+      reminder: { type: Boolean, default: true },
+      results: { type: Boolean, default: true },
+      joins: { type: Boolean, default: true },
+    },
     tokenVersion: { type: Number, default: 0 },
     trustScore: { type: Number, default: 1 },
   },
   opts,
 );
+
+UserSchema.index({ appleSub: 1 }, { unique: true, partialFilterExpression: { appleSub: { $type: 'string' } } });
+UserSchema.index({ googleSub: 1 }, { unique: true, partialFilterExpression: { googleSub: { $type: 'string' } } });
 
 const ChallengeSchema = new Schema(
   {
@@ -136,7 +148,24 @@ const PayoutSchema = new Schema(
 );
 PayoutSchema.index({ challengeId: 1, userId: 1, kind: 1 }, { unique: true });
 
+/** In-app inbox. Every notification lands here; push is an extra, gated by the user's prefs. */
+const NotificationSchema = new Schema(
+  {
+    userId: { type: Schema.Types.ObjectId, required: true },
+    kind: { type: String, enum: ['goal', 'overtake', 'reminder', 'results', 'joins'], required: true },
+    title: { type: String, required: true },
+    body: { type: String, required: true },
+    data: { type: Map, of: String },
+    readAt: Date,
+  },
+  { timestamps: { createdAt: true, updatedAt: false }, versionKey: false },
+);
+NotificationSchema.index({ userId: 1, createdAt: -1 });
+// Inbox keeps 60 days.
+NotificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 86400 });
+
 export const User = mongoose.model('User', UserSchema);
+export const Notification = mongoose.model('Notification', NotificationSchema);
 export const Challenge = mongoose.model('Challenge', ChallengeSchema);
 export const Participant = mongoose.model('Participant', ParticipantSchema);
 export const StepSampleModel = mongoose.model('StepSample', StepSampleSchema);
@@ -150,5 +179,5 @@ export type ParticipantDoc = InferSchemaType<typeof ParticipantSchema> & { _id: 
 
 export async function connectDb(url: string) {
   await mongoose.connect(url);
-  await Promise.all([User, Challenge, Participant, StepSampleModel, HourBucket, Ledger, Payout].map((m) => m.syncIndexes()));
+  await Promise.all([User, Challenge, Participant, StepSampleModel, HourBucket, Ledger, Payout, Notification].map((m) => m.syncIndexes()));
 }

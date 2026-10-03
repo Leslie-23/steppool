@@ -6,7 +6,7 @@ import mongoose from 'mongoose';
 import { authRouter } from './auth.js';
 import { adminRouter, challengesRouter } from './challenges.js';
 import { errorHandler } from './errors.js';
-import { meRouter, payoutsRouter, stepsRouter, walletRouter } from './routes.js';
+import { meRouter, notificationsRouter, payoutsRouter, stepsRouter, walletRouter } from './routes.js';
 import { webRouter } from './web.js';
 
 export function buildApp() {
@@ -25,6 +25,7 @@ export function buildApp() {
   app.use('/steps', stepsRouter);
   app.use('/challenges', challengesRouter);
   app.use('/wallet', walletRouter);
+  app.use('/notifications', notificationsRouter);
   app.use('/payouts', payoutsRouter);
   app.use('/admin', adminRouter);
   app.use(errorHandler);

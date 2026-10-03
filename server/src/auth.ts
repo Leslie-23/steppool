@@ -12,6 +12,7 @@ import { account, inTransaction, transfer } from './ledger.js';
 import { User, type UserDoc } from './models.js';
 import { redis } from './redis.js';
 import { mailEnabled, sendOtpEmail } from './mailer.js';
+import { verifyProviderToken, type Provider } from './oauth.js';
 import { toMe } from './views.js';
 
 const ACCESS_TTL = '15m';
@@ -107,15 +108,59 @@ authRouter.post('/verify', async (req, res) => {
 
   let user = await User.findOne({ email });
   const isNew = !user;
-  if (!user) {
-    user = await inTransaction(async (session) => {
-      const [created] = await User.create([{ email }], { session });
-      await transfer(session, { from: account.mint, to: account.user(created._id), amount: SIGNUP_CREDITS, kind: 'signup_grant' });
-      return created;
-    });
-    user = (await User.findById(user._id))!;
-  }
+  if (!user) user = await createUser({ email });
   res.json({ tokens: issueTokens(user), me: toMe(user), isNew });
+});
+
+/** New account with its signup credits, in one transaction. */
+async function createUser(fields: { email: string; name?: string; appleSub?: string; googleSub?: string }) {
+  const created = await inTransaction(async (session) => {
+    const [u] = await User.create([fields], { session });
+    await transfer(session, { from: account.mint, to: account.user(u._id), amount: SIGNUP_CREDITS, kind: 'signup_grant' });
+    return u;
+  });
+  return (await User.findById(created._id))!;
+}
+
+/**
+ * Sign in with Apple / Google. Match on the provider's stable user id first; otherwise link to an
+ * existing account with the same *verified* email; otherwise create one. Unverified emails never link,
+ * or anyone could claim someone else's account by asserting their address.
+ */
+async function signInWithProvider(provider: Provider, token: string, name?: string) {
+  const claims = await verifyProviderToken(provider, token);
+  const subField = provider === 'apple' ? 'appleSub' : 'googleSub';
+  const email = claims.email?.trim().toLowerCase();
+  const cleanName = (name ?? claims.name)?.trim().slice(0, 24) || undefined;
+
+  let user = await User.findOne({ [subField]: claims.sub });
+  let isNew = false;
+  if (!user && email && claims.emailVerified) {
+    user = await User.findOneAndUpdate({ email }, { $set: { [subField]: claims.sub } }, { returnDocument: 'after' });
+  }
+  if (!user) {
+    isNew = true;
+    // Use the provider email only if it's verified and not already someone else's account. Otherwise
+    // (Apple withheld it, it's unverified, or it's taken) keep a unique placeholder so the account still works.
+    const usable = email && claims.emailVerified && !(await User.exists({ email })) ? email : null;
+    user = await createUser({ email: usable ?? `${provider}.${claims.sub}@users.steppool.app`, name: cleanName, [subField]: claims.sub });
+  } else if (!user.name && cleanName) {
+    user.name = cleanName;
+    await user.save();
+  }
+  return { tokens: issueTokens(user), me: toMe(user), isNew };
+}
+
+authRouter.post('/apple', async (req, res) => {
+  const body = z.object({ identityToken: z.string().min(20), name: z.string().max(60).optional() }).parse(req.body);
+  await limit(`oauth:ip:${req.ip}`, 30, 3600);
+  res.json(await signInWithProvider('apple', body.identityToken, body.name));
+});
+
+authRouter.post('/google', async (req, res) => {
+  const body = z.object({ idToken: z.string().min(20) }).parse(req.body);
+  await limit(`oauth:ip:${req.ip}`, 30, 3600);
+  res.json(await signInWithProvider('google', body.idToken));
 });
 
 authRouter.post('/refresh', async (req, res) => {

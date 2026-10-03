@@ -11,6 +11,7 @@ import { HttpError } from './errors.js';
 import { account, balanceOf, inTransaction, transfer } from './ledger.js';
 import { Challenge, Ledger, Participant, Payout, User, type ChallengeDoc, type ParticipantDoc } from './models.js';
 import { scheduleChallenge } from './queue.js';
+import { notify } from './push.js';
 import { markDirty, rankOf, setScore, topRows } from './realtime.js';
 import { sumBuckets } from './steps.js';
 import { toSummary } from './views.js';
@@ -108,6 +109,9 @@ export async function joinChallenge(challengeId: string, userId: string) {
   }
   await setScore(String(c._id), String(user._id), steps);
   markDirty(String(c._id));
+  if (c.createdBy && !c.createdBy.equals(user._id)) {
+    notify(c.createdBy, 'joins', { title: `${user.name.split(' ')[0]} joined ${c.name}`, body: `${c.players + 1} walking now. Pool keeps growing.`, data: { challengeId: String(c._id) } }, `joins:${c._id}`);
+  }
   const fresh = (await Challenge.findById(c._id).lean<ChallengeDoc>())!;
   return (await summarise([fresh], userId))[0];
 }

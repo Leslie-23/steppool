@@ -140,7 +140,7 @@ async function updateChallenges(userId: Types.ObjectId, from: Date, to: Date) {
     markDirty(cid);
     if (justHit) {
       emit(cid, 'goal:hit', { challengeId: cid, userId: String(userId), name: p.name });
-      notify(userId, { title: 'Goal hit 🎉', body: `You're in the pool for ${c.name}.`, data: { challengeId: cid } });
+      notify(userId, 'goal', { title: 'Goal hit 🎉', body: `You're in the pool for ${c.name}.`, data: { challengeId: cid } });
     }
     if (counted > before) await notifyOvertaken(c.name, cid, String(userId), p.name, before, counted);
   }
@@ -154,6 +154,6 @@ async function notifyOvertaken(challengeName: string, cid: string, userId: strin
     .lean();
   for (const other of passed) {
     const rank = await rankOf(cid, other.steps ?? 0);
-    notify(other.userId, { title: `${name.split(' ')[0]} just passed you`, body: `You're #${rank} in ${challengeName}. ${after - (other.steps ?? 0) + 1} steps to take it back.`, data: { challengeId: cid } }, `overtaken:${cid}`);
+    notify(other.userId, 'overtake', { title: `${name.split(' ')[0]} just passed you`, body: `You're #${rank} in ${challengeName}. ${after - (other.steps ?? 0) + 1} steps to take it back.`, data: { challengeId: cid } }, `overtaken:${cid}`);
   }
 }

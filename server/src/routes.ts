@@ -2,13 +2,13 @@ import { Router } from 'express';
 import { Types } from 'mongoose';
 import { z } from 'zod';
 
-import { DAY_MS, IngestBody, type Analytics, type LedgerLine, type Payout as PayoutView } from '../../shared/contracts.js';
+import { DAY_MS, IngestBody, type Analytics, type InboxItem, type LedgerLine, type NotificationKind, type Payout as PayoutView } from '../../shared/contracts.js';
 import { dailyTarget } from '../../shared/goals.js';
 
 import { limit, requireUser } from './auth.js';
 import { HttpError } from './errors.js';
 import { account } from './ledger.js';
-import { Challenge, HourBucket, Ledger, Participant, Payout, User } from './models.js';
+import { Challenge, HourBucket, Ledger, Notification, Participant, Payout, User } from './models.js';
 import { dailyTotals, ingest } from './steps.js';
 import { toMe } from './views.js';
 
@@ -27,9 +27,17 @@ meRouter.patch('/', async (req, res) => {
       name: z.string().trim().min(2).max(24).optional(),
       avatar: z.string().url().max(500).optional(),
       pushToken: z.string().max(200).optional(),
+      notifPrefs: z
+        .object({ goal: z.boolean(), overtake: z.boolean(), reminder: z.boolean(), results: z.boolean(), joins: z.boolean() })
+        .partial()
+        .optional(),
     })
     .parse(req.body);
-  const u = await User.findByIdAndUpdate(req.userId, { $set: patch }, { returnDocument: 'after' });
+  // Prefs merge key by key so toggling one never resets the others.
+  const { notifPrefs, ...rest } = patch;
+  const set: Record<string, unknown> = { ...rest };
+  for (const [k, v] of Object.entries(notifPrefs ?? {})) set[`notifPrefs.${k}`] = v;
+  const u = await User.findByIdAndUpdate(req.userId, { $set: set }, { returnDocument: 'after' });
   if (!u) throw new HttpError(401, 'Sign in again');
   res.json(toMe(u));
 });
@@ -99,6 +107,35 @@ stepsRouter.get('/analytics', async (req, res) => {
     },
   };
   res.json(body);
+});
+
+export const notificationsRouter = Router();
+notificationsRouter.use(requireUser);
+
+notificationsRouter.get('/', async (req, res) => {
+  const [rows, unread] = await Promise.all([
+    Notification.find({ userId: req.userId }).sort({ createdAt: -1 }).limit(50).lean(),
+    Notification.countDocuments({ userId: req.userId, readAt: { $exists: false } }),
+  ]);
+  const items = rows.map(
+    (n): InboxItem => ({
+      id: String(n._id),
+      kind: n.kind as NotificationKind,
+      title: n.title,
+      body: n.body,
+      challengeId: (n.data as unknown as Record<string, string> | undefined)?.challengeId,
+      read: !!n.readAt,
+      at: (n.createdAt as Date).toISOString(),
+    }),
+  );
+  res.json({ items, unread });
+});
+
+/** Marks the given ids read, or everything when no ids are sent. */
+notificationsRouter.post('/read', async (req, res) => {
+  const { ids } = z.object({ ids: z.array(z.string().regex(/^[a-f0-9]{24}$/)).max(100).optional() }).parse(req.body ?? {});
+  await Notification.updateMany({ userId: req.userId, readAt: { $exists: false }, ...(ids ? { _id: { $in: ids } } : {}) }, { $set: { readAt: new Date() } });
+  res.json({ unread: await Notification.countDocuments({ userId: req.userId, readAt: { $exists: false } }) });
 });
 
 export const walletRouter = Router();

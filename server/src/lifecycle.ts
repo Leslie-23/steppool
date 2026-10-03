@@ -8,7 +8,7 @@ export async function startChallenge(challengeId: string, now = new Date()) {
   if (!c) return;
   markDirty(challengeId);
   for (const p of await Participant.find({ challengeId }, { userId: 1, goal: 1 }).lean()) {
-    notify(p.userId, { title: `${c.name} is live`, body: `Your goal: ${p.goal.toLocaleString()} steps. Go.`, data: { challengeId } });
+    notify(p.userId, 'reminder', { title: `${c.name} is live`, body: `Your goal: ${p.goal.toLocaleString()} steps. Go.`, data: { challengeId } });
   }
 }
 
@@ -18,7 +18,7 @@ export async function lastHour(challengeId: string) {
   for (const p of await Participant.find({ challengeId, status: 'active' }).lean()) {
     const left = p.goal - (p.steps ?? 0);
     if (left <= 0) continue;
-    notify(p.userId, { title: '1 hour left ⏱', body: `${left.toLocaleString()} steps to your goal in ${c.name}. You can still make it.`, data: { challengeId } });
+    notify(p.userId, 'reminder', { title: '1 hour left ⏱', body: `${left.toLocaleString()} steps to your goal in ${c.name}. You can still make it.`, data: { challengeId } });
   }
 }
 

@@ -18,6 +18,10 @@ export const config = {
   /** Gmail account + app password used to email sign-in codes. */
   mailUser: env.MAIL_USER || undefined,
   mailPass: env.MAIL_APP_PASSWORD?.replace(/\s+/g, '') || undefined,
+  /** Sign in with Apple: identity-token audiences (the iOS bundle id). */
+  appleAudiences: (env.APPLE_AUDIENCES ?? 'com.steppool.app').split(',').map((s) => s.trim()).filter(Boolean),
+  /** Google OAuth client ids (iOS, Android, web) whose ID tokens we accept. */
+  googleClientIds: (env.GOOGLE_CLIENT_IDS ?? '').split(',').map((s) => s.trim()).filter(Boolean),
   /** Return OTP codes in the API response. Never in production. */
   otpInResponse: env.NODE_ENV !== 'production',
   extraTrustedSources: (env.EXTRA_TRUSTED_SOURCES ?? '').split(',').map((s) => s.trim()).filter(Boolean),

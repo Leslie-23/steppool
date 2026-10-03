@@ -90,7 +90,7 @@ export async function settleChallenge(challengeId: string, now = new Date()) {
   emit(cid, 'challenge:settled', { challengeId: cid });
   for (const userId of everyone) {
     const won = winnerIds.has(userId);
-    notify(userId, {
+    notify(userId, 'results', {
       title: won ? 'You made it 🏆' : `${c.name} is over`,
       body: won ? `Results are in for ${c.name}. Collect your share.` : 'See how everyone finished.',
       data: { challengeId: cid, results: '1' },

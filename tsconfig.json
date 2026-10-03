@@ -6,16 +6,6 @@
       "@/*": ["./*"]
     }
   },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    ".expo/types/**/*.ts",
-    "expo-env.d.ts",
-    "components/CoachChatButton.js",
-    "components/SectionCard.js",
-    "app/(tabs)/workouts.js",
-    "app/(tabs)/progress.js",
-    "app/(tabs)/profile.js",
-    "app/(tabs)/nutrition.js"
-  ]
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
+  "exclude": ["node_modules", "server"]
 }

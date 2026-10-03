@@ -2,9 +2,11 @@ import { randomUUID } from 'node:crypto';
 
 import mongoose, { type ClientSession, type Types } from 'mongoose';
 
+import type { LedgerKind } from '../../shared/contracts.js';
+
 import { Ledger, User } from './models.js';
 
-type Kind = 'signup_grant' | 'entry' | 'payout' | 'refund' | 'house_remainder';
+type Kind = LedgerKind;
 
 export const account = {
   user: (id: Types.ObjectId | string) => `user:${id}`,
@@ -27,7 +29,7 @@ export class InsufficientCredits extends Error {
  */
 export async function transfer(
   session: ClientSession,
-  { from, to, amount, kind, challengeId }: { from: string; to: string; amount: number; kind: Kind; challengeId?: Types.ObjectId },
+  { from, to, amount, kind, challengeId, note, by, ref }: { from: string; to: string; amount: number; kind: Kind; challengeId?: Types.ObjectId; note?: string; by?: Types.ObjectId; ref?: string },
 ) {
   if (!Number.isInteger(amount) || amount <= 0) throw new Error(`Invalid amount ${amount}`);
   const txId = randomUUID();
@@ -40,8 +42,8 @@ export async function transfer(
   }
   await Ledger.insertMany(
     [
-      { txId, account: from, amount: -amount, kind, challengeId },
-      { txId, account: to, amount, kind, challengeId },
+      { txId, account: from, amount: -amount, kind, challengeId, note, by },
+      { txId, account: to, amount, kind, challengeId, note, by, ref },
     ],
     { session, ordered: true },
   );

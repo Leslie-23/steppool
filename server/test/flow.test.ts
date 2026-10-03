@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { StepSample } from '../../shared/contracts.js';
 import { buildApp } from '../src/app.js';
 import { lastHour, startChallenge } from '../src/lifecycle.js';
-import { Challenge, connectDb } from '../src/models.js';
+import { Challenge, connectDb, Ledger } from '../src/models.js';
 import { redis } from '../src/redis.js';
 import { settleChallenge } from '../src/settle.js';
 import { HOUR_MS } from '../src/verify.js';
@@ -123,15 +123,17 @@ describe('credits challenge, end to end', () => {
     const after = new Date(ch.syncCutoffAt.getTime() + 1000);
     expect(await settleChallenge(c.id, after)).toEqual({ finishers: 1 });
     expect(await settleChallenge(c.id, after)).toBeNull(); // idempotent
-    expect(await credits(ama.auth)).toBe(1200);
-    expect(await credits(kofi.auth)).toBe(900);
+    // Hitting the daily target also earns walk rewards (one per day the walk touched), separate from the pool.
+    const rewards = async (id: string) => (await Ledger.find({ account: `user:${id}`, kind: { $in: ['walk_reward', 'streak_bonus'] } }).lean()).reduce((a, l) => a + l.amount, 0);
+    expect(await credits(ama.auth)).toBe(1200 + (await rewards(ama.id)));
+    expect(await credits(kofi.auth)).toBe(900 + (await rewards(kofi.id)));
 
     const { body: results } = await request(app).get(`/challenges/${c.id}/results`).set(ama.auth).expect(200);
     expect(results.finishers).toBe(1);
     expect(results.me).toMatchObject({ goalHit: true, wonCredits: 300, rank: 1 });
 
     const { body: wallet } = await request(app).get('/wallet').set(ama.auth).expect(200);
-    expect(wallet.lines.map((l: { kind: string; amount: number }) => [l.kind, l.amount])).toEqual([
+    expect(wallet.lines.filter((l: { kind: string }) => !['walk_reward', 'streak_bonus'].includes(l.kind)).map((l: { kind: string; amount: number }) => [l.kind, l.amount])).toEqual([
       ['payout', 300],
       ['entry', -100],
       ['signup_grant', 1000],

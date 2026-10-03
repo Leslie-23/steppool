@@ -3,13 +3,15 @@ import { Types } from 'mongoose';
 import { z } from 'zod';
 
 import { DAY_MS, IngestBody, type Analytics, type InboxItem, type LedgerLine, type NotificationKind, type Payout as PayoutView } from '../../shared/contracts.js';
-import { dailyTarget } from '../../shared/goals.js';
+import { CREDITS, MAX_CUSTOM_DAILY, MIN_CUSTOM_DAILY } from '../../shared/goals.js';
 
 import { limit, requireUser } from './auth.js';
 import { HttpError } from './errors.js';
 import { account } from './ledger.js';
 import { Challenge, HourBucket, Ledger, Notification, Participant, Payout, User } from './models.js';
 import { dailyTotals, ingest } from './steps.js';
+import { notify } from './push.js';
+import { canRedeemReferral, award, ensureReferralCode, targetFor } from './rewards.js';
 import { toMe } from './views.js';
 
 export const meRouter = Router();
@@ -18,7 +20,25 @@ meRouter.use(requireUser);
 meRouter.get('/', async (req, res) => {
   const u = await User.findById(req.userId);
   if (!u) throw new HttpError(401, 'Sign in again');
+  if (!u.referralCode) u.referralCode = await ensureReferralCode(u);
   res.json(toMe(u));
+});
+
+/** Enter a friend's referral code (once, within 7 days of joining): +100 credits each. */
+meRouter.post('/referral', async (req, res) => {
+  const { code } = z.object({ code: z.string().trim().toUpperCase().length(6) }).parse(req.body);
+  const me = await User.findById(req.userId);
+  if (!me) throw new HttpError(401, 'Sign in again');
+  if (!canRedeemReferral(me as typeof me & { createdAt?: Date })) throw new HttpError(409, 'Referral codes can only be used once, in your first week');
+  const friend = await User.findOne({ referralCode: code });
+  if (!friend || friend._id.equals(me._id)) throw new HttpError(404, 'No one has that referral code');
+  // Claim first so a double tap can't pay twice.
+  const claimed = await User.updateOne({ _id: me._id, referredBy: { $exists: false } }, { $set: { referredBy: friend._id } });
+  if (!claimed.modifiedCount) throw new HttpError(409, 'Referral already used');
+  await award(me._id, CREDITS.referral, 'referral', `referral:new:${me._id}`, `Joined with ${friend.name || 'a friend'}'s code`);
+  await award(friend._id, CREDITS.referral, 'referral', `referral:by:${me._id}`, `${me.name || 'A friend'} joined with your code`);
+  notify(friend._id, 'announcement', { title: `+${CREDITS.referral} credits`, body: `${me.name || 'A friend'} joined with your code.` });
+  res.json(toMe((await User.findById(me._id))!));
 });
 
 meRouter.patch('/', async (req, res) => {
@@ -27,17 +47,22 @@ meRouter.patch('/', async (req, res) => {
       name: z.string().trim().min(2).max(24).optional(),
       avatar: z.string().url().max(500).optional(),
       pushToken: z.string().max(200).optional(),
+      /** Own daily target, or null to go back to "derive from my usual pace". */
+      dailyTarget: z.number().int().min(MIN_CUSTOM_DAILY).max(MAX_CUSTOM_DAILY).nullable().optional(),
       notifPrefs: z
-        .object({ goal: z.boolean(), overtake: z.boolean(), reminder: z.boolean(), results: z.boolean(), joins: z.boolean() })
+        .object({ goal: z.boolean(), overtake: z.boolean(), reminder: z.boolean(), results: z.boolean(), joins: z.boolean(), announcement: z.boolean() })
         .partial()
         .optional(),
     })
     .parse(req.body);
   // Prefs merge key by key so toggling one never resets the others.
-  const { notifPrefs, ...rest } = patch;
+  const { notifPrefs, dailyTarget, ...rest } = patch;
   const set: Record<string, unknown> = { ...rest };
+  const unset: Record<string, ''> = {};
   for (const [k, v] of Object.entries(notifPrefs ?? {})) set[`notifPrefs.${k}`] = v;
-  const u = await User.findByIdAndUpdate(req.userId, { $set: set }, { returnDocument: 'after' });
+  if (dailyTarget === null) unset.dailyTargetOverride = '';
+  else if (dailyTarget !== undefined) set.dailyTargetOverride = dailyTarget;
+  const u = await User.findByIdAndUpdate(req.userId, { $set: set, ...(Object.keys(unset).length ? { $unset: unset } : {}) }, { returnDocument: 'after' });
   if (!u) throw new HttpError(401, 'Sign in again');
   res.json(toMe(u));
 });
@@ -63,7 +88,7 @@ stepsRouter.get('/analytics', async (req, res) => {
   const from = today - 29 * DAY_MS;
   const [days, user, hourRows, parts, wins] = await Promise.all([
     dailyTotals(userId, from, today + DAY_MS),
-    User.findById(userId, { baselineDaily: 1 }).lean(),
+    User.findById(userId, { baselineDaily: 1, dailyTargetOverride: 1 }).lean(),
     HourBucket.aggregate<{ _id: number; total: number }>([
       { $match: { userId, hour: { $gte: new Date(from), $lt: new Date(today + DAY_MS) } } },
       { $group: { _id: { $hour: '$hour' }, total: { $sum: '$counted' } } },
@@ -72,7 +97,7 @@ stepsRouter.get('/analytics', async (req, res) => {
     Ledger.aggregate<{ total: number }>([{ $match: { account: `user:${req.userId}`, kind: 'payout' } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
   ]);
   const baselineDaily = user?.baselineDaily ?? 0;
-  const target = dailyTarget(baselineDaily);
+  const target = user ? targetFor(user) : 0;
   // Average over the days that have any data, so a new user's empty history doesn't flatten the curve.
   const activeDays = days.filter((d) => d.steps > 0).length;
   const hourly = Array.from({ length: 24 }, (_, h) => Math.round((hourRows.find((r) => r._id === h)?.total ?? 0) / Math.max(1, activeDays)));
@@ -157,6 +182,7 @@ walletRouter.get('/', async (req, res) => {
         id: String(l._id),
         amount: l.amount,
         kind: l.kind as LedgerLine['kind'],
+        note: l.note ?? undefined,
         challengeName: l.challengeId ? names.get(String(l.challengeId)) : undefined,
         at: (l.createdAt as Date).toISOString(),
       }),

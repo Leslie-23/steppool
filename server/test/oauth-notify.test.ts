@@ -96,7 +96,7 @@ describe('notifications', () => {
   it('merges preference toggles one key at a time and still records muted kinds in the inbox', async () => {
     const u = await user('p-1', 'Prefs Person');
     const { body: me } = await request(app).patch('/me').set(u.auth).send({ notifPrefs: { overtake: false } }).expect(200);
-    expect(me.notifPrefs).toEqual({ goal: true, overtake: false, reminder: true, results: true, joins: true });
+    expect(me.notifPrefs).toEqual({ goal: true, overtake: false, reminder: true, results: true, joins: true, announcement: true });
     const { body: me2 } = await request(app).patch('/me').set(u.auth).send({ notifPrefs: { joins: false } }).expect(200);
     expect(me2.notifPrefs.overtake).toBe(false); // not reset by the second toggle
     await deliver(u.id, 'overtake', { title: 'Someone passed you', body: 'Muted for push, kept in the inbox' });

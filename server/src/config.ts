@@ -18,6 +18,8 @@ export const config = {
   /** Gmail account + app password used to email sign-in codes. */
   mailUser: env.MAIL_USER || undefined,
   mailPass: env.MAIL_APP_PASSWORD?.replace(/\s+/g, '') || undefined,
+  /** Emails that become admins when they sign in. */
+  adminEmails: (env.ADMIN_EMAILS ?? '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean),
   /** Sign in with Apple: identity-token audiences (the iOS bundle id). */
   appleAudiences: (env.APPLE_AUDIENCES ?? 'com.steppool.app').split(',').map((s) => s.trim()).filter(Boolean),
   /** Google OAuth client ids (iOS, Android, web) whose ID tokens we accept. */

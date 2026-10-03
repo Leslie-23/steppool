@@ -56,12 +56,32 @@ export function requireUser(req: Request, _res: Response, next: NextFunction) {
   next();
 }
 
-export function requireAdmin(req: Request, _res: Response, next: NextFunction) {
-  const key = req.header('x-admin-key') ?? '';
-  const a = Buffer.from(key);
-  const b = Buffer.from(config.adminKey);
-  if (a.length !== b.length || !timingSafeEqual(a, b)) return next(new HttpError(403, 'Forbidden'));
+/**
+ * Admin access: either the server's API key (scripts, cron) or a signed-in user with the admin role
+ * (the web console). The role is re-read from the database on every request, so revoking is instant.
+ */
+export async function requireAdmin(req: Request, _res: Response, next: NextFunction) {
+  const key = req.header('x-admin-key');
+  if (key) {
+    const a = Buffer.from(key);
+    const b = Buffer.from(config.adminKey);
+    return a.length === b.length && timingSafeEqual(a, b) ? next() : next(new HttpError(403, 'Forbidden'));
+  }
+  const token = req.headers.authorization?.replace(/^Bearer /, '');
+  const sub = token ? verifyAccess(token) : null;
+  if (!sub) return next(new HttpError(401, 'Sign in again'));
+  const u = await User.findById(sub, { role: 1 }).lean();
+  if (u?.role !== 'admin') return next(new HttpError(403, 'Admins only'));
+  req.userId = sub;
   next();
+}
+
+/** Promotes allow-listed emails to admin on sign-in. */
+async function applyAdminRole(user: UserDoc) {
+  if (user.role !== 'admin' && config.adminEmails.includes(user.email)) {
+    await User.updateOne({ _id: user._id }, { $set: { role: 'admin' } });
+    user.role = 'admin';
+  }
 }
 
 /** Fixed-window limiter in Redis. */
@@ -109,6 +129,7 @@ authRouter.post('/verify', async (req, res) => {
   let user = await User.findOne({ email });
   const isNew = !user;
   if (!user) user = await createUser({ email });
+  await applyAdminRole(user);
   res.json({ tokens: issueTokens(user), me: toMe(user), isNew });
 });
 
@@ -148,6 +169,7 @@ async function signInWithProvider(provider: Provider, token: string, name?: stri
     user.name = cleanName;
     await user.save();
   }
+  await applyAdminRole(user);
   return { tokens: issueTokens(user), me: toMe(user), isNew };
 }
 

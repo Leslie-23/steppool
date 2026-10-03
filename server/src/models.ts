@@ -16,6 +16,11 @@ const UserSchema = new Schema(
      */
     credits: { type: Number, default: 0 },
     pushToken: String,
+    role: { type: String, enum: ['user', 'admin'], default: 'user' },
+    /** The user's own daily target; null means "derive from my usual pace". */
+    dailyTargetOverride: Number,
+    referralCode: String,
+    referredBy: { type: Schema.Types.ObjectId, ref: 'User' },
     appleSub: String,
     googleSub: String,
     notifPrefs: {
@@ -24,6 +29,7 @@ const UserSchema = new Schema(
       reminder: { type: Boolean, default: true },
       results: { type: Boolean, default: true },
       joins: { type: Boolean, default: true },
+      announcement: { type: Boolean, default: true },
     },
     tokenVersion: { type: Number, default: 0 },
     trustScore: { type: Number, default: 1 },
@@ -31,6 +37,7 @@ const UserSchema = new Schema(
   opts,
 );
 
+UserSchema.index({ referralCode: 1 }, { unique: true, partialFilterExpression: { referralCode: { $type: 'string' } } });
 UserSchema.index({ appleSub: 1 }, { unique: true, partialFilterExpression: { appleSub: { $type: 'string' } } });
 UserSchema.index({ googleSub: 1 }, { unique: true, partialFilterExpression: { googleSub: { $type: 'string' } } });
 
@@ -128,11 +135,23 @@ const LedgerSchema = new Schema(
     account: { type: String, required: true, index: true }, // user:<id> | pool:<challengeId> | house | mint
     amount: { type: Number, required: true },
     currency: { type: String, enum: ['CREDIT', 'GHS'], default: 'CREDIT' },
-    kind: { type: String, enum: ['signup_grant', 'entry', 'payout', 'refund', 'house_remainder'], required: true },
+    kind: {
+      type: String,
+      enum: ['signup_grant', 'entry', 'payout', 'refund', 'house_remainder', 'walk_reward', 'streak_bonus', 'weekly_topup', 'referral', 'admin_grant'],
+      required: true,
+    },
+    /** Human-readable reason (e.g. an admin grant's note). */
+    note: String,
+    /** Admin who made a manual grant. */
+    by: { type: Schema.Types.ObjectId, ref: 'User' },
+    /** Idempotency key for automatic awards (set on the credit line only), e.g. walk:<user>:<day>. */
+    ref: String,
     challengeId: { type: Schema.Types.ObjectId, ref: 'Challenge' },
   },
   { timestamps: { createdAt: true, updatedAt: false }, versionKey: false },
 );
+
+LedgerSchema.index({ ref: 1 }, { unique: true, partialFilterExpression: { ref: { $type: 'string' } } });
 
 const PayoutSchema = new Schema(
   {
@@ -152,7 +171,7 @@ PayoutSchema.index({ challengeId: 1, userId: 1, kind: 1 }, { unique: true });
 const NotificationSchema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, required: true },
-    kind: { type: String, enum: ['goal', 'overtake', 'reminder', 'results', 'joins'], required: true },
+    kind: { type: String, enum: ['goal', 'overtake', 'reminder', 'results', 'joins', 'announcement'], required: true },
     title: { type: String, required: true },
     body: { type: String, required: true },
     data: { type: Map, of: String },

@@ -6,6 +6,7 @@ import { baselineFrom } from '../../shared/goals.js';
 import { config } from './config.js';
 import { Challenge, HourBucket, Participant, StepSampleModel, User } from './models.js';
 import { notify } from './push.js';
+import { rewardDailyTarget } from './rewards.js';
 import { emit, markDirty, rankOf, setScore } from './realtime.js';
 import { HOUR_MS, SUSTAINED_HOURLY, SUSTAINED_RUN_HOURS, applySustainedCheck, buildBuckets, classify, holdLateBackfill, type RawSample } from './verify.js';
 
@@ -111,6 +112,7 @@ export async function ingest(userIdStr: string, body: IngestBody, now = new Date
   }
 
   const today = await sumBuckets(userId, new Date(dayStart(now.getTime())), new Date(dayStart(now.getTime()) + DAY_MS));
+  await rewardDailyTarget(userId, today.counted, now.getTime());
   return { accepted: flagged.filter((s) => !s.rejected).length, todaySteps: today.counted };
 }
 

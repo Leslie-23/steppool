@@ -115,7 +115,7 @@ export interface Analytics {
   challenges: { joined: number; finished: number; live: number; creditsWon: number; prizesWon: number };
 }
 
-export type NotificationKind = 'goal' | 'overtake' | 'reminder' | 'results' | 'joins';
+export type NotificationKind = 'goal' | 'overtake' | 'reminder' | 'results' | 'joins' | 'announcement';
 export type NotificationPrefs = Record<NotificationKind, boolean>;
 
 export interface InboxItem {
@@ -137,14 +137,34 @@ export interface Me {
   baselineDaily: number;
   credits: number;
   notifPrefs: NotificationPrefs;
+  /** The daily target in effect: the user's own if set, otherwise derived from their usual pace. */
+  dailyTarget: number;
+  dailyTargetCustom: boolean;
+  referralCode: string;
+  /** True while a new account can still enter someone's referral code. */
+  canRedeemReferral: boolean;
+  role: 'user' | 'admin';
   /** Which sign-in methods are linked. */
   providers: ('email' | 'apple' | 'google')[];
 }
 
+export type LedgerKind =
+  | 'signup_grant'
+  | 'entry'
+  | 'payout'
+  | 'refund'
+  | 'house_remainder'
+  | 'walk_reward'
+  | 'streak_bonus'
+  | 'weekly_topup'
+  | 'referral'
+  | 'admin_grant';
+
 export interface LedgerLine {
   id: string;
   amount: number;
-  kind: 'signup_grant' | 'entry' | 'payout' | 'refund' | 'house_remainder';
+  kind: LedgerKind;
+  note?: string;
   challengeName?: string;
   at: string;
 }

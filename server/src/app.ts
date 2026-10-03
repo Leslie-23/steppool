@@ -3,6 +3,7 @@ import express from 'express';
 import helmet from 'helmet';
 import mongoose from 'mongoose';
 
+import { consoleRouter } from './admin.js';
 import { authRouter } from './auth.js';
 import { adminRouter, challengesRouter } from './challenges.js';
 import { errorHandler } from './errors.js';
@@ -28,6 +29,7 @@ export function buildApp() {
   app.use('/notifications', notificationsRouter);
   app.use('/payouts', payoutsRouter);
   app.use('/admin', adminRouter);
+  app.use('/admin', consoleRouter);
   app.use(errorHandler);
   return app;
 }

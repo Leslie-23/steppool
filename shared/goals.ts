@@ -5,6 +5,19 @@ export const DEFAULT_BASELINE = 6000;
 export const MIN_DAILY = 5000;
 export const MAX_DAILY = 20000;
 export const DEFAULT_MULTIPLIER = 1.15;
+/** Bounds for a user's own daily target. */
+export const MIN_CUSTOM_DAILY = 3000;
+export const MAX_CUSTOM_DAILY = 30000;
+
+/** Credit economy: credits are earned, never bought. */
+export const CREDITS = {
+  dailyTargetHit: 20,
+  streakBonus: 100, // every 7 consecutive days on target
+  streakEvery: 7,
+  weeklyFloor: 200, // Monday top-up back to this
+  referral: 100, // each, for the inviter and the new player
+} as const;
+
 /** Bounds for the creator's "how hard" control. */
 export const MIN_MULTIPLIER = 0.8;
 export const MAX_MULTIPLIER = 2;

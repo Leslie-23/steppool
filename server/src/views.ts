@@ -1,6 +1,7 @@
 import type { ChallengeSummary, LeaderboardRow, Me } from '../../shared/contracts.js';
 
 import type { ChallengeDoc, ParticipantDoc, UserDoc } from './models.js';
+import { canRedeemReferral, targetFor } from './rewards.js';
 
 export function toMe(u: UserDoc): Me {
   const p = u.notifPrefs;
@@ -12,7 +13,19 @@ export function toMe(u: UserDoc): Me {
     avatar: u.avatar ?? undefined,
     baselineDaily: u.baselineDaily ?? 0,
     credits: u.credits ?? 0,
-    notifPrefs: { goal: p?.goal ?? true, overtake: p?.overtake ?? true, reminder: p?.reminder ?? true, results: p?.results ?? true, joins: p?.joins ?? true },
+    notifPrefs: {
+      goal: p?.goal ?? true,
+      overtake: p?.overtake ?? true,
+      reminder: p?.reminder ?? true,
+      results: p?.results ?? true,
+      joins: p?.joins ?? true,
+      announcement: p?.announcement ?? true,
+    },
+    dailyTarget: targetFor(u),
+    dailyTargetCustom: u.dailyTargetOverride != null,
+    referralCode: u.referralCode ?? '',
+    canRedeemReferral: canRedeemReferral(u as UserDoc & { createdAt?: Date }),
+    role: (u.role as 'user' | 'admin') ?? 'user',
     providers: ['email' as const, ...(u.appleSub ? (['apple'] as const) : []), ...(u.googleSub ? (['google'] as const) : [])],
   };
 }

@@ -111,6 +111,30 @@
       "typedRoutes": true,
       "reactCompiler": true
     },
-    "backgroundColor": "#07080A"
+    "backgroundColor": "#07080A",
+    "extra": {
+      "router": {},
+      "eas": {
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "bundleIdentifier": "com.steppool.app.widget",
+                  "targetName": "StepPoolWidget",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.steppool.app"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "projectId": "dac576f9-f10f-4200-bd27-6715ccc0fad5"
+      }
+    },
+    "owner": "lesliepaul-23-2"
   }
 }

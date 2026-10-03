@@ -5,7 +5,8 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import * as SecureStore from 'expo-secure-store';
+import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
@@ -13,6 +14,7 @@ import 'react-native-reanimated';
 import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 
+import { Intro } from '@/components/Intro';
 import { api } from '@/lib/api';
 import { hrefFor, useInbox } from '@/lib/inbox';
 import { registerPush } from '@/lib/push';
@@ -22,12 +24,19 @@ import { color } from '@/theme/tokens';
 
 SplashScreen.preventAutoHideAsync();
 
+const INTRO_KEY = 'steppool.introSeen';
+
 const theme = { ...DarkTheme, colors: { ...DarkTheme.colors, background: color.bg, card: color.bg, primary: color.volt, text: color.text, border: color.hairline } };
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({ SpaceGrotesk_500Medium, SpaceGrotesk_700Bold, Inter_400Regular, Inter_500Medium, Inter_600SemiBold });
   const { ready, tokens, me, healthGranted, hydrate, setMe, signOut } = useSession();
   const signedIn = !!tokens;
+  // First launch only: the brand intro plays once for people who have never signed in on this device.
+  const [introSeen, setIntroSeen] = useState<boolean | null>(null);
+  useEffect(() => {
+    SecureStore.getItemAsync(INTRO_KEY).then((v) => setIntroSeen(v === '1')).catch(() => setIntroSeen(true));
+  }, []);
 
   useEffect(() => {
     hydrate();
@@ -68,7 +77,7 @@ export default function RootLayout() {
     };
   }, [onboarded]);
 
-  const loading = !fontsLoaded || !ready || (signedIn && !me);
+  const loading = !fontsLoaded || !ready || introSeen === null || (signedIn && !me);
   useEffect(() => {
     if (!loading) SplashScreen.hideAsync();
   }, [loading]);
@@ -99,7 +108,15 @@ export default function RootLayout() {
           </Stack.Protected>
           {__DEV__ ? <Stack.Screen name="dev-login" /> : null}
         </Stack>
-        <StatusBar style="light" />
+        {!signedIn && introSeen === false ? (
+          <Intro
+            onDone={() => {
+              setIntroSeen(true);
+              SecureStore.setItemAsync(INTRO_KEY, '1').catch(() => {});
+            }}
+          />
+        ) : null}
+        <StatusBar style={!signedIn && introSeen === false ? 'dark' : 'light'} />
       </ThemeProvider>
     </GestureHandlerRootView>
   );

@@ -17,6 +17,7 @@ const MAPPING = {
   'house.fill': 'home',
   'figure.walk': 'directions-walk',
   'flame.fill': 'local-fire-department',
+  'chart.bar.fill': 'bar-chart',
   'trophy.fill': 'emoji-events',
   'crown.fill': 'workspace-premium',
   'wallet.pass.fill': 'account-balance-wallet',

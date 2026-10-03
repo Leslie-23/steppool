@@ -2,12 +2,13 @@ import { Router } from 'express';
 import { Types } from 'mongoose';
 import { z } from 'zod';
 
-import { DAY_MS, IngestBody, type LedgerLine, type Payout as PayoutView } from '../../shared/contracts.js';
+import { DAY_MS, IngestBody, type Analytics, type LedgerLine, type Payout as PayoutView } from '../../shared/contracts.js';
+import { dailyTarget } from '../../shared/goals.js';
 
 import { limit, requireUser } from './auth.js';
 import { HttpError } from './errors.js';
 import { account } from './ledger.js';
-import { Challenge, Ledger, Payout, User } from './models.js';
+import { Challenge, HourBucket, Ledger, Participant, Payout, User } from './models.js';
 import { dailyTotals, ingest } from './steps.js';
 import { toMe } from './views.js';
 
@@ -46,6 +47,58 @@ stepsRouter.get('/today', async (req, res) => {
   const today = Math.floor(Date.now() / DAY_MS) * DAY_MS;
   const [week, user] = await Promise.all([dailyTotals(userId, today - 6 * DAY_MS, today + DAY_MS), User.findById(userId, { baselineDaily: 1 }).lean()]);
   res.json({ steps: week.at(-1)?.steps ?? 0, baselineDaily: user?.baselineDaily ?? 0, week });
+});
+
+stepsRouter.get('/analytics', async (req, res) => {
+  const userId = new Types.ObjectId(req.userId);
+  const today = Math.floor(Date.now() / DAY_MS) * DAY_MS;
+  const from = today - 29 * DAY_MS;
+  const [days, user, hourRows, parts, wins] = await Promise.all([
+    dailyTotals(userId, from, today + DAY_MS),
+    User.findById(userId, { baselineDaily: 1 }).lean(),
+    HourBucket.aggregate<{ _id: number; total: number }>([
+      { $match: { userId, hour: { $gte: new Date(from), $lt: new Date(today + DAY_MS) } } },
+      { $group: { _id: { $hour: '$hour' }, total: { $sum: '$counted' } } },
+    ]),
+    Participant.find({ userId }, { status: 1, challengeId: 1 }).lean(),
+    Ledger.aggregate<{ total: number }>([{ $match: { account: `user:${req.userId}`, kind: 'payout' } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
+  ]);
+  const baselineDaily = user?.baselineDaily ?? 0;
+  const target = dailyTarget(baselineDaily);
+  // Average over the days that have any data, so a new user's empty history doesn't flatten the curve.
+  const activeDays = days.filter((d) => d.steps > 0).length;
+  const hourly = Array.from({ length: 24 }, (_, h) => Math.round((hourRows.find((r) => r._id === h)?.total ?? 0) / Math.max(1, activeDays)));
+  const complete = days.slice(0, -1); // today isn't over
+  let streak = 0;
+  for (let i = complete.length - 1; i >= 0 && complete[i].steps >= target; i--) streak++;
+  let longestStreak = 0;
+  let run = 0;
+  for (const d of complete) {
+    run = d.steps >= target ? run + 1 : 0;
+    longestStreak = Math.max(longestStreak, run);
+  }
+  const best = days.reduce<(typeof days)[number] | null>((b, d) => (d.steps > (b?.steps ?? 0) ? d : b), null);
+  const live = await Challenge.countDocuments({ _id: { $in: parts.map((p) => p.challengeId) }, status: 'live' });
+  const body: Analytics = {
+    days,
+    hourly,
+    dailyTarget: target,
+    baselineDaily,
+    thisWeek: days.slice(-7).reduce((a, d) => a + d.steps, 0),
+    lastWeek: days.slice(-14, -7).reduce((a, d) => a + d.steps, 0),
+    bestDay: best,
+    activeDays,
+    streak,
+    longestStreak,
+    challenges: {
+      joined: parts.length,
+      finished: parts.filter((p) => p.status === 'finished').length,
+      live,
+      creditsWon: wins[0]?.total ?? 0,
+      prizesWon: await Payout.countDocuments({ userId, kind: 'sponsor_prize' }),
+    },
+  };
+  res.json(body);
 });
 
 export const walletRouter = Router();

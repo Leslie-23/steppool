@@ -137,6 +137,15 @@ describe('credits challenge, end to end', () => {
       ['signup_grant', 1000],
     ]);
 
+    const { body: stats } = await request(app).get('/steps/analytics').set(ama.auth).expect(200);
+    expect(stats.days).toHaveLength(30);
+    expect(stats.hourly).toHaveLength(24);
+    expect(stats.challenges).toMatchObject({ joined: 1, finished: 1, creditsWon: 300 });
+    expect(stats.days.reduce((a: number, d: { steps: number }) => a + d.steps, 0)).toBe(20000);
+    // Hourly is an average over active days (rounded per hour), so it reconstructs the total within rounding.
+    const hourlySum = stats.hourly.reduce((a: number, n: number) => a + n, 0);
+    expect(Math.abs(hourlySum * stats.activeDays - 20000)).toBeLessThanOrEqual(24 * stats.activeDays);
+
     const { body: check } = await request(app).get('/admin/ledger/check').set(ADMIN).expect(200);
     expect(check).toEqual({ sum: 0, mismatchedUsers: [] });
   });

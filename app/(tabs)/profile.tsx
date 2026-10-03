@@ -1,6 +1,7 @@
+import { router } from 'expo-router';
 import { Alert, Platform, ScrollView, View } from 'react-native';
 
-import { Avatar, Button, Card, Row, Screen, T } from '@/components/ds/primitives';
+import { Avatar, Button, Card, Press, Row, Screen, T } from '@/components/ds/primitives';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { api } from '@/lib/api';
 import { health } from '@/lib/health';
@@ -37,6 +38,21 @@ export default function ProfileScreen() {
           <Stat label="Usual day" value={(me?.baselineDaily ?? 0).toLocaleString()} icon="clock.fill" />
           <Stat label="Daily target" value={target.toLocaleString()} icon="bolt.fill" />
         </Row>
+
+        <Press onPress={() => router.push('/analytics')} accessibilityRole="button" accessibilityLabel="Open analytics">
+          <Card tone="volt">
+            <Row gap={space.md}>
+              <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: color.voltDim, alignItems: 'center', justifyContent: 'center' }}>
+                <IconSymbol name="chart.bar.fill" size={20} color={color.volt} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <T v="heading" style={{ fontSize: 16 }}>Analytics</T>
+                <T v="caption">30-day trend, when you walk, streaks and challenge record</T>
+              </View>
+              <IconSymbol name="chevron.right" size={16} color={color.muted} />
+            </Row>
+          </Card>
+        </Press>
 
         <Card>
           <Row gap={space.md}>

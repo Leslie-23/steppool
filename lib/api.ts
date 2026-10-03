@@ -1,4 +1,5 @@
 import type {
+  Analytics,
   ChallengeResults,
   ChallengeSummary,
   CreateChallengeBody,
@@ -63,6 +64,7 @@ export const api = {
   me: () => request<Me>('GET', '/me'),
   updateMe: (patch: { name?: string; avatar?: string; pushToken?: string }) => request<Me>('PATCH', '/me', patch),
   ingest: (body: IngestBody) => request<{ accepted: number; todaySteps: number }>('POST', '/steps/ingest', body),
+  analytics: () => request<Analytics>('GET', '/steps/analytics'),
   today: () => request<{ steps: number; baselineDaily: number; week: { day: string; steps: number }[] }>('GET', '/steps/today'),
   challenges: () => request<{ featured: ChallengeSummary[]; open: ChallengeSummary[]; mine: ChallengeSummary[] }>('GET', '/challenges'),
   challenge: (id: string) => request<ChallengeSummary>('GET', `/challenges/${id}`),

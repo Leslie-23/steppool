@@ -96,6 +96,23 @@ export interface ChallengeResults {
   me?: { steps: number; rank: number; goal: number; goalHit: boolean; wonCredits?: number; prize?: string; payoutId?: string; flagged?: boolean };
 }
 
+export interface Analytics {
+  /** Last 30 UTC days, oldest first. */
+  days: { day: string; steps: number }[];
+  /** Average verified steps per UTC hour of day (0–23) over the last 30 days. */
+  hourly: number[];
+  dailyTarget: number;
+  baselineDaily: number;
+  thisWeek: number;
+  lastWeek: number;
+  bestDay: { day: string; steps: number } | null;
+  activeDays: number;
+  /** Consecutive full days on target, ending yesterday. */
+  streak: number;
+  longestStreak: number;
+  challenges: { joined: number; finished: number; live: number; creditsWon: number; prizesWon: number };
+}
+
 export interface Me {
   id: string;
   email: string;

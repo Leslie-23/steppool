@@ -1,7 +1,7 @@
 import { useEventListener } from 'expo';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useEffect, useRef } from 'react';
-import { Alert, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
@@ -32,7 +32,6 @@ export function Intro({ onDone }: { onDone: () => void }) {
 
   const finish = (why = 'tap') => {
     if (finished.current) return;
-    if (__DEV__) Alert.alert('intro debug', `${why} t=${player.currentTime.toFixed(2)} dur=${player.duration.toFixed(2)} status=${player.status}`); // TEMP
     finished.current = true;
     haptic.tick();
     scale.value = withTiming(1.06, { duration: 520, easing: Easing.out(Easing.cubic) });

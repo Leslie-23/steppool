@@ -238,6 +238,16 @@ describe('auth', () => {
   });
 });
 
+describe('goal difficulty', () => {
+  it('lets the creator set the stretch, applied to each player\'s own pace', async () => {
+    const u = await signUp('Hard Mode');
+    const { body: c } = await request(app).post('/challenges').set(u.auth).send({ name: 'Beast week', durationHours: 48, entryCredits: 0, visibility: 'private', goalMultiplier: 2 }).expect(201);
+    expect(c.goalMultiplier).toBe(2);
+    expect(c.me.goal).toBe(24000); // default 6,000/day × 2 = 12,000/day × 2 days
+    await request(app).post('/challenges').set(u.auth).send({ name: 'Too hard', durationHours: 48, entryCredits: 0, visibility: 'private', goalMultiplier: 3 }).expect(400);
+  });
+});
+
 describe('validation', () => {
   it('returns 400 (not 500) for bad bodies validated by shared contracts', async () => {
     const u = await signUp('Validator');

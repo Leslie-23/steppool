@@ -2,6 +2,8 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
+import { GoalSlider } from '@/components/ds/GoalSlider';
+import { Odometer } from '@/components/ds/Odometer';
 import { Segmented } from '@/components/ds/Segmented';
 import { Button, Card, Row, Screen, T } from '@/components/ds/primitives';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -10,8 +12,8 @@ import { haptic } from '@/lib/haptics';
 import { registerPush } from '@/lib/push';
 import { useSession } from '@/lib/session';
 import type { CreateChallengeBody } from '@/shared/contracts';
-import { challengeGoal } from '@/shared/goals';
-import { color, font, radius, space, type } from '@/theme/tokens';
+import { challengeGoal, dailyTarget, DEFAULT_MULTIPLIER, intensityLabel, MAX_DAILY, MAX_MULTIPLIER, MIN_DAILY, MIN_MULTIPLIER, stretchText } from '@/shared/goals';
+import { color, font, radius, space } from '@/theme/tokens';
 
 const DURATIONS = [
   { label: '48 hours', value: 48 },
@@ -29,14 +31,19 @@ export default function CreateChallenge() {
   const [visibility, setVisibility] = useState<'private' | 'public'>('private');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const goal = challengeGoal(me?.baselineDaily ?? 0, duration);
+  const [multiplier, setMultiplier] = useState(DEFAULT_MULTIPLIER);
+  const goal = challengeGoal(me?.baselineDaily ?? 0, duration, multiplier);
+  const perDay = Math.round(goal / (duration / 24));
+  // Daily goals are clamped for safety; say so instead of letting the slider silently do nothing.
+  const daily = dailyTarget(me?.baselineDaily ?? 0, multiplier);
+  const clamp = daily >= MAX_DAILY ? 'max' : daily <= MIN_DAILY ? 'min' : null;
   const valid = name.trim().length >= 3 && (me?.credits ?? 0) >= entry;
 
   const create = async () => {
     setBusy(true);
     setError(null);
     try {
-      const c = await api.create({ name: name.trim(), durationHours: duration, entryCredits: entry, visibility });
+      const c = await api.create({ name: name.trim(), durationHours: duration, entryCredits: entry, visibility, goalMultiplier: multiplier });
       haptic.success();
       api.me().then(setMe).catch(() => {});
       router.replace(`/challenge/${c.id}`);
@@ -96,10 +103,28 @@ export default function CreateChallenge() {
             />
           </View>
 
-          <Card tone="volt">
-            <T v="label">Your goal would be</T>
-            <T style={[type.num, { fontSize: 32, marginTop: 4 }]}>{goal.toLocaleString()} steps</T>
-            <T v="caption">Everyone gets their own goal from their usual week, so it's fair for every fitness level.</T>
+          <Card tone="volt" style={{ gap: space.md }}>
+            <Row style={{ justifyContent: 'space-between' }}>
+              <T v="label">Goal difficulty</T>
+              <Row gap={6}>
+                <T v="caption" style={{ color: color.volt }}>{intensityLabel(multiplier)}</T>
+                <T v="caption">· usual pace {stretchText(multiplier)}</T>
+              </Row>
+            </Row>
+            <Row gap={6} style={{ alignItems: 'flex-end' }}>
+              <Odometer value={goal} size={36} />
+              <T v="caption" style={{ marginBottom: 6 }}>steps for you · ~{perDay.toLocaleString()}/day</T>
+            </Row>
+            {clamp ? (
+              <Row gap={6}>
+                <IconSymbol name="lock.fill" size={12} color={color.muted} />
+                <T v="caption" style={{ fontSize: 12 }}>
+                  {clamp === 'max' ? `Capped at ${MAX_DAILY.toLocaleString()} steps/day for safety` : `Floor of ${MIN_DAILY.toLocaleString()} steps/day`} — going further won't change your goal.
+                </T>
+              </Row>
+            ) : null}
+            <GoalSlider value={multiplier} onChange={setMultiplier} min={MIN_MULTIPLIER} max={MAX_MULTIPLIER} step={0.05} recommended={DEFAULT_MULTIPLIER} />
+            <T v="caption">Applies to everyone's own usual pace, so it stays fair across fitness levels. Each player sees their own number.</T>
           </Card>
           {error ? <T v="caption" style={{ color: color.danger }}>{error}</T> : null}
         </ScrollView>

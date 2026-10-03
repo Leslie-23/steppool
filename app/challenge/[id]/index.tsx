@@ -23,7 +23,7 @@ import { shareCard } from '@/lib/share';
 import { useChallengeRoom } from '@/lib/socket';
 import { useApi } from '@/lib/useApi';
 import type { LeaderboardRow } from '@/shared/contracts';
-import { challengeGoal } from '@/shared/goals';
+import { challengeGoal, intensityLabel, stretchText } from '@/shared/goals';
 import { color, space, type } from '@/theme/tokens';
 
 const CONFETTI = [color.gold, color.volt, '#F4F1EA', '#FFB86B'];
@@ -108,7 +108,7 @@ export default function ArenaScreen() {
   const sponsored = c.kind === 'sponsored';
   const accent = sponsored ? color.gold : color.volt;
   const durationH = (new Date(c.endsAt).getTime() - new Date(c.startsAt).getTime()) / 3600_000;
-  const previewGoal = challengeGoal(me?.baselineDaily ?? 0, durationH);
+  const previewGoal = challengeGoal(me?.baselineDaily ?? 0, durationH, c.goalMultiplier);
   const steps = mine?.steps ?? c.me?.steps ?? 0;
   const goal = c.me?.goal ?? previewGoal;
   const canAfford = (me?.credits ?? 0) >= c.entryCredits;
@@ -184,7 +184,7 @@ export default function ArenaScreen() {
                 <View>
                   <T v="label">Your personal goal</T>
                   <T style={[type.num, { fontSize: 28 }]}>{previewGoal.toLocaleString()}</T>
-                  <T v="caption">Based on your usual week, +15%</T>
+                  <T v="caption">Your usual pace {stretchText(c.goalMultiplier)} · {intensityLabel(c.goalMultiplier)}</T>
                 </View>
                 <IconSymbol name="figure.walk" size={36} color={accent} />
               </Row>

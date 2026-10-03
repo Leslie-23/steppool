@@ -31,6 +31,7 @@ const MAPPING = {
   'bolt.fill': 'bolt',
   'clock.fill': 'schedule',
   'plus': 'add',
+  'minus': 'remove',
   'xmark': 'close',
   'link': 'link',
   'square.and.arrow.up': 'ios-share',

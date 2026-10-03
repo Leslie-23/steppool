@@ -35,6 +35,8 @@ export const CreateChallengeBody = z.object({
   entryCredits: z.number().int().min(0).max(1000),
   visibility: z.enum(['public', 'private']),
   startsAt: z.string().datetime().optional(),
+  /** Stretch applied to every player's own usual pace (1.15 = +15%). */
+  goalMultiplier: z.number().min(0.8).max(2).optional(),
 });
 export type CreateChallengeBody = z.infer<typeof CreateChallengeBody>;
 
@@ -46,7 +48,6 @@ export const SponsorChallengeBody = CreateChallengeBody.extend({
     prizeValueGhs: z.number().nonnegative(),
     maxWinners: z.number().int().positive().optional(),
   }),
-  goalMultiplier: z.number().min(0.8).max(2).optional(),
 });
 export type SponsorChallengeBody = z.infer<typeof SponsorChallengeBody>;
 
@@ -68,6 +69,7 @@ export interface ChallengeSummary {
   visibility: 'public' | 'private';
   inviteCode: string;
   entryCredits: number;
+  goalMultiplier: number;
   poolCredits: number;
   players: number;
   startsAt: string;

@@ -15,6 +15,7 @@ export function toSummary(c: ChallengeDoc, poolCredits: number, me?: { p: Partic
     visibility: c.visibility as ChallengeSummary['visibility'],
     inviteCode: c.inviteCode,
     entryCredits: c.entryCredits ?? 0,
+    goalMultiplier: c.goalMultiplier ?? 1.15,
     poolCredits,
     players: c.players ?? 0,
     startsAt: c.startsAt.toISOString(),

@@ -34,6 +34,8 @@ services:
         sync: false
       - key: APPLE_AUDIENCES
         value: com.steppool.app
+      - key: ADMIN_EMAILS
+        value: leslieajayi27@gmail.com
       - key: GOOGLE_CLIENT_IDS
         value: 1009173626527-5kg1gke7bt4j5c8165vv9jalht16r0fl.apps.googleusercontent.com,1009173626527-q7f0snkntnvu2ag4u4t6gb4t7jfairo9.apps.googleusercontent.com
       - key: APPLE_TEAM_ID
@@ -45,6 +47,21 @@ services:
           type: keyvalue
           name: steppool-redis
           property: connectionString
+
+  # Web: marketing site + admin console (Next.js). Talks to the API from the browser.
+  - type: web
+    name: steppool-web
+    runtime: node
+    rootDir: web
+    plan: free
+    region: frankfurt
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NEXT_PUBLIC_API_URL
+        value: https://steppool-api.onrender.com
 
   - type: keyvalue
     name: steppool-redis

@@ -213,7 +213,24 @@ adminRouter.get('/challenges/:id/flags', async (req, res) => {
 });
 
 adminRouter.get('/payouts', async (req, res) => {
-  res.json(await Payout.find({ status: String(req.query.status ?? 'claimed') as 'pending' | 'claimed' | 'fulfilled' }).sort({ updatedAt: 1 }).limit(200).lean());
+  const rows = await Payout.find({ status: String(req.query.status ?? 'claimed') as 'pending' | 'claimed' | 'fulfilled' }).sort({ updatedAt: 1 }).limit(200).lean();
+  const [users, challenges] = await Promise.all([
+    User.find({ _id: { $in: rows.map((r) => r.userId) } }, { name: 1, email: 1 }).lean(),
+    Challenge.find({ _id: { $in: rows.map((r) => r.challengeId) } }, { name: 1 }).lean(),
+  ]);
+  const u = new Map(users.map((x) => [String(x._id), x]));
+  const c = new Map(challenges.map((x) => [String(x._id), x.name]));
+  res.json(
+    rows.map((r) => ({
+      id: String(r._id),
+      prizeDescription: r.prizeDescription,
+      amount: r.amount,
+      status: r.status,
+      user: { name: u.get(String(r.userId))?.name ?? '', email: u.get(String(r.userId))?.email ?? '' },
+      challengeName: c.get(String(r.challengeId)) ?? '',
+      claim: r.claim?.momoNumber ? r.claim : undefined,
+    })),
+  );
 });
 
 adminRouter.post('/payouts/:id/fulfill', async (req, res) => {

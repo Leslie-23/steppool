@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+/* StepPool dark luxe tokens, same values as the mobile app's theme/tokens.ts. */
+:root {
+  --bg: #07080a;
+  --surface: #0e1013;
+  --raised: #15181d;
+  --hairline: rgba(255, 255, 255, 0.07);
+  --text: #f4f1ea;
+  --muted: #8a8f98;
+  --faint: #4a4f57;
+  --volt: #d7ff3a;
+  --gold: #e8c36a;
+  --danger: #ff5a4e;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-raised: var(--raised);
+  --color-hairline: var(--hairline);
+  --color-ink: var(--text);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-volt: var(--volt);
+  --color-gold: var(--gold);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-grotesk);
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+body {
+  font-family: var(--font-inter), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.num {
+  font-family: var(--font-grotesk), system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 20px;
+}
+
+.input {
+  background: var(--raised);
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  padding: 10px 14px;
+  color: var(--text);
+  outline: none;
+  width: 100%;
+}
+.input:focus {
+  border-color: color-mix(in oklab, var(--volt) 60%, transparent);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 18px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 14px;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.btn:active {
+  transform: scale(0.98);
+}
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.btn-volt {
+  background: var(--volt);
+  color: var(--bg);
+}
+.btn-gold {
+  background: var(--gold);
+  color: var(--bg);
+}
+.btn-ghost {
+  border: 1px solid var(--hairline);
+  color: var(--text);
+}

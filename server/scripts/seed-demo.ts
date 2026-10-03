@@ -47,10 +47,10 @@ async function upload(userId: string, samples: StepSample[]) {
   for (const [t, batch] of [...byHour].sort((a, b) => a[0] - b[0])) await ingest(userId, { platform: 'ios', samples: batch }, new Date(Math.min(t, now)));
 }
 
-async function makeChallenge(name: string, startsAt: number, hours: number, entry: number, sponsor?: object) {
+async function makeChallenge(name: string, code: string, startsAt: number, hours: number, entry: number, sponsor?: object) {
   const c = await Challenge.create({
     name, kind: sponsor ? 'sponsored' : 'credits', visibility: 'public', entryCredits: entry,
-    inviteCode: name.replace(/[^A-Z]/gi, '').slice(0, 3).toUpperCase() + String(now).slice(-3),
+    inviteCode: code,
     startsAt: new Date(now + HOUR), endsAt: new Date(now + HOUR + hours * HOUR), syncCutoffAt: new Date(now + 3 * HOUR + hours * HOUR), sponsor,
   });
   return { c, open: async (ids: string[]) => {
@@ -76,17 +76,17 @@ const historyFrom = floorHour(now) - 9 * DAY;
 for (const [i, [, scale]] of PEOPLE.entries()) await upload(ids[i], walking(historyFrom, historyFrom + 6 * DAY, scale));
 
 // Finished last weekend: Leslie hit the goal.
-const done = await makeChallenge('Last Weekend Dash', historyFrom + 3 * DAY, 48, 50);
+const done = await makeChallenge('Last Weekend Dash', 'LASTWK', historyFrom + 3 * DAY, 48, 50);
 await done.open(ids.slice(0, 8));
 await settleChallenge(String(done.c._id), new Date(historyFrom + 6 * DAY));
 
 // Live now: a week-long class challenge, started 3 days ago.
 const liveStart = floorHour(now) - 3 * DAY;
-const live = await makeChallenge('RMU IT Walkers', liveStart, 168, 100);
+const live = await makeChallenge('RMU IT Walkers', 'RMUWLK', liveStart, 168, 100);
 await live.open(ids);
-const sponsored = await makeChallenge('MTN Walk Week', liveStart, 168, 0, { name: 'MTN', prizeDescription: 'GH₵2,000 split between everyone who hits their goal', prizeValueGhs: 2000 });
+const sponsored = await makeChallenge('MTN Walk Week', 'MTNWLK', liveStart, 168, 0, { name: 'MTN', prizeDescription: 'GH₵2,000 split between everyone who hits their goal', prizeValueGhs: 2000 });
 await sponsored.open(ids.slice(0, 9));
-await makeChallenge('Weekend Warriors', floorHour(now) + 20 * HOUR, 48, 50).then((x) => x.c);
+await makeChallenge('Weekend Warriors', 'WKNDWR', floorHour(now) + 20 * HOUR, 48, 50).then((x) => x.c);
 
 for (const [i, [, scale]] of PEOPLE.entries()) await upload(ids[i], walking(historyFrom + 6 * DAY, now, scale));
 

@@ -14,6 +14,7 @@ import { pendingInvite } from '@/lib/invite';
 import { useSession } from '@/lib/session';
 import { syncSteps } from '@/lib/sync';
 import { useApi } from '@/lib/useApi';
+import { updateWidget } from '@/lib/widget';
 import { dailyTarget } from '@/shared/goals';
 import { color, space, type } from '@/theme/tokens';
 
@@ -44,6 +45,11 @@ export default function TodayScreen() {
   const mine = rows.findIndex((r) => r.userId === me?.id);
   const above = mine > 0 ? rows[mine - 1] : undefined;
   const gap = above && mine >= 0 ? above.steps - rows[mine].steps + 1 : 0;
+
+  useEffect(() => {
+    if (!today.data) return;
+    updateWidget({ steps, target, challenge: focus?.name, rank: mine >= 0 ? rows[mine].rank : undefined, gapToNext: above ? gap : undefined, nextName: above?.name.split(' ')[0] });
+  }, [today.data, steps, target, focus?.name, mine, rows, above, gap]);
 
   const onRefresh = async () => {
     setPulling(true);

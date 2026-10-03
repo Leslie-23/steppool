@@ -19,6 +19,11 @@
           "fetch",
           "processing"
         ]
+      },
+      "entitlements": {
+        "com.apple.security.application-groups": [
+          "group.com.steppool.app"
+        ]
       }
     },
     "android": {
@@ -96,7 +101,8 @@
           "color": "#D7FF3A"
         }
       ],
-      "expo-font"
+      "expo-font",
+      "@bacons/apple-targets"
     ],
     "experiments": {
       "typedRoutes": true,

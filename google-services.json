@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "891981747483",
+    "project_id": "step-pool-0023",
+    "storage_bucket": "step-pool-0023.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:891981747483:android:d1c34cfae9236da1bfefbe",
+        "android_client_info": {
+          "package_name": "com.steppool.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDlL8hXNpUOi3kfk8ezp_1qIwwUBhZqHDo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

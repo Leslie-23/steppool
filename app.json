@@ -58,7 +58,8 @@
       "permissions": [
         "android.permission.health.READ_STEPS",
         "android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND"
-      ]
+      ],
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "output": "static",

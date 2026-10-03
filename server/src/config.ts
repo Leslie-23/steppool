@@ -23,6 +23,8 @@ export const config = {
   extraTrustedSources: (env.EXTRA_TRUSTED_SOURCES ?? '').split(',').map((s) => s.trim()).filter(Boolean),
   appleTeamId: env.APPLE_TEAM_ID,
   androidFingerprints: (env.ANDROID_SHA256_FINGERPRINTS ?? '').split(',').filter(Boolean),
+  /** Run BullMQ jobs inside the API process (free plan has no background workers). */
+  jobsInProcess: env.JOBS_IN_PROCESS === 'true',
   /** Feature flag: real-money entry. Stays off until legal review. */
   paidEntryEnabled: env.PAID_ENTRY_ENABLED === 'true',
 };

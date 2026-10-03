@@ -8,6 +8,7 @@ import type { ClientToServer, ServerToClient } from '../../shared/contracts.js';
 import { buildApp } from './app.js';
 import { verifyAccess } from './auth.js';
 import { config } from './config.js';
+import { startJobs } from './jobs.js';
 import { connectDb } from './models.js';
 import { newRedis } from './redis.js';
 import { room, setBroadcaster, startLeaderboardTicker } from './realtime.js';
@@ -42,5 +43,9 @@ io.on('connection', (socket) => {
 
 setBroadcaster(io);
 startLeaderboardTicker();
+if (config.jobsInProcess) {
+  await startJobs();
+  console.log('Lifecycle jobs running in-process');
+}
 
 http.listen(config.port, () => console.log(`StepPool API on :${config.port}`));

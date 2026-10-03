@@ -1,11 +1,14 @@
-# Render Blueprint: API (HTTP + Socket.IO), BullMQ worker, and Key Value (Redis).
-# MongoDB is external (Atlas): set MONGO_URL as a secret in the dashboard. Render has no managed Mongo.
+# Render Blueprint — free plan: one web service (API + Socket.IO + lifecycle jobs in-process)
+# and a free Key Value (Redis). MongoDB is Atlas: set MONGO_URL as a secret.
+#
+# To move to paid: set plan: starter, set JOBS_IN_PROCESS=false, and add a worker service:
+#   - type: worker, rootDir: server, buildCommand: npm ci && npm run build, startCommand: npm run worker
 services:
   - type: web
     name: steppool-api
     runtime: node
     rootDir: server
-    plan: starter
+    plan: free
     region: frankfurt # closest Render region to Accra
     buildCommand: npm ci && npm run build
     startCommand: npm start
@@ -15,8 +18,10 @@ services:
         value: production
       - key: NODE_VERSION
         value: "22"
+      - key: JOBS_IN_PROCESS
+        value: "true"
       - key: PUBLIC_URL
-        value: https://steppool.onrender.com
+        value: https://steppool-api.onrender.com
       - key: MONGO_URL
         sync: false
       - key: JWT_SECRET
@@ -37,40 +42,9 @@ services:
           name: steppool-redis
           property: connectionString
 
-  - type: worker
-    name: steppool-worker
-    runtime: node
-    rootDir: server
-    plan: starter
-    region: frankfurt
-    buildCommand: npm ci && npm run build
-    startCommand: npm run worker
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: NODE_VERSION
-        value: "22"
-      - key: MONGO_URL
-        sync: false
-      - key: JWT_SECRET
-        fromService:
-          type: web
-          name: steppool-api
-          envVarKey: JWT_SECRET
-      - key: ADMIN_API_KEY
-        fromService:
-          type: web
-          name: steppool-api
-          envVarKey: ADMIN_API_KEY
-      - key: REDIS_URL
-        fromService:
-          type: keyvalue
-          name: steppool-redis
-          property: connectionString
-
   - type: keyvalue
     name: steppool-redis
-    plan: starter
+    plan: free
     region: frankfurt
     # BullMQ requires keys never be evicted.
     maxmemoryPolicy: noeviction

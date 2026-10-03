@@ -54,6 +54,19 @@ export default function ProfileScreen() {
           </Card>
         </Press>
 
+        <Press onPress={() => router.push('/settings/notifications')} accessibilityRole="button" accessibilityLabel="Notification settings">
+          <Card>
+            <Row gap={space.md}>
+              <IconSymbol name="bell.fill" size={20} color={color.volt} />
+              <View style={{ flex: 1 }}>
+                <T v="heading" style={{ fontSize: 15 }}>Notifications</T>
+                <T v="caption">Overtakes, goals, reminders, results</T>
+              </View>
+              <IconSymbol name="chevron.right" size={16} color={color.muted} />
+            </Row>
+          </Card>
+        </Press>
+
         <Card>
           <Row gap={space.md}>
             <IconSymbol name={Platform.OS === 'ios' ? 'heart.fill' : 'iphone'} size={22} color={color.volt} />

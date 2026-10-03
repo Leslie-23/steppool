@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { RefreshControl, ScrollView, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { ChallengeCard } from '@/components/arena/ChallengeCard';
@@ -10,6 +10,7 @@ import { StepRing } from '@/components/ds/StepRing';
 import { Avatar, Card, Press, Row, Screen, T } from '@/components/ds/primitives';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { api } from '@/lib/api';
+import { useInbox } from '@/lib/inbox';
 import { pendingInvite } from '@/lib/invite';
 import { useSession } from '@/lib/session';
 import { syncSteps } from '@/lib/sync';
@@ -25,6 +26,7 @@ function greeting() {
 
 export default function TodayScreen() {
   const me = useSession((s) => s.me);
+  const unread = useInbox((s) => s.unread);
   const today = useApi(api.today);
   const lobby = useApi(api.challenges);
   const live = lobby.data?.mine.filter((c) => c.status === 'live') ?? [];
@@ -70,9 +72,19 @@ export default function TodayScreen() {
             <T v="caption">{greeting()}</T>
             <T v="heading">{me?.name}</T>
           </View>
-          <Press onPress={() => router.push('/(tabs)/profile')}>
-            <Avatar name={me?.name ?? '?'} size={40} />
-          </Press>
+          <Row gap={space.md}>
+            <Press onPress={() => router.push('/notifications')} style={styles.bell} accessibilityLabel={unread ? `Notifications, ${unread} unread` : 'Notifications'}>
+              <IconSymbol name="bell.fill" size={18} color={color.text} />
+              {unread ? (
+                <View style={styles.badge}>
+                  <T style={styles.badgeText}>{unread > 9 ? '9+' : unread}</T>
+                </View>
+              ) : null}
+            </Press>
+            <Press onPress={() => router.push('/(tabs)/profile')}>
+              <Avatar name={me?.name ?? '?'} size={40} />
+            </Press>
+          </Row>
         </Row>
 
         <View style={{ alignItems: 'center' }}>
@@ -140,3 +152,9 @@ export default function TodayScreen() {
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  bell: { width: 40, height: 40, borderRadius: 20, backgroundColor: color.surface, alignItems: 'center', justifyContent: 'center', borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  badge: { position: 'absolute', top: -2, right: -2, minWidth: 18, height: 18, paddingHorizontal: 4, borderRadius: 9, backgroundColor: color.volt, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: color.bg },
+  badgeText: { fontFamily: 'Inter_600SemiBold', fontSize: 10, lineHeight: 12, color: color.bg },
+});

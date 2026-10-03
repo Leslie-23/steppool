@@ -1,5 +1,7 @@
 import type {
   Analytics,
+  InboxItem,
+  NotificationPrefs,
   ChallengeResults,
   ChallengeSummary,
   CreateChallengeBody,
@@ -61,6 +63,11 @@ type Tokens = { access: string; refresh: string };
 export const api = {
   requestOtp: (email: string) => request<{ devCode?: string }>('POST', '/auth/otp', { email }),
   verifyOtp: (email: string, code: string) => request<{ tokens: Tokens; me: Me; isNew: boolean }>('POST', '/auth/verify', { email, code }),
+  appleSignIn: (identityToken: string, name?: string) => request<{ tokens: Tokens; me: Me; isNew: boolean }>('POST', '/auth/apple', { identityToken, name }),
+  googleSignIn: (idToken: string) => request<{ tokens: Tokens; me: Me; isNew: boolean }>('POST', '/auth/google', { idToken }),
+  notifications: () => request<{ items: InboxItem[]; unread: number }>('GET', '/notifications'),
+  markRead: (ids?: string[]) => request<{ unread: number }>('POST', '/notifications/read', { ids }),
+  updatePrefs: (notifPrefs: Partial<NotificationPrefs>) => request<Me>('PATCH', '/me', { notifPrefs }),
   me: () => request<Me>('GET', '/me'),
   updateMe: (patch: { name?: string; avatar?: string; pushToken?: string }) => request<Me>('PATCH', '/me', patch),
   ingest: (body: IngestBody) => request<{ accepted: number; todaySteps: number }>('POST', '/steps/ingest', body),

@@ -10,7 +10,11 @@ import { AppState } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
+import * as Notifications from 'expo-notifications';
+import { router } from 'expo-router';
+
 import { api } from '@/lib/api';
+import { hrefFor, useInbox } from '@/lib/inbox';
 import { registerPush } from '@/lib/push';
 import { useSession } from '@/lib/session';
 import { registerBackgroundSync, syncSteps } from '@/lib/sync';
@@ -41,8 +45,27 @@ export default function RootLayout() {
     syncSteps().catch(() => {});
     registerBackgroundSync().catch(() => {});
     registerPush().catch(() => {});
-    const sub = AppState.addEventListener('change', (s) => s === 'active' && syncSteps().catch(() => {}));
-    return () => sub.remove();
+    const refreshInbox = useInbox.getState().refresh;
+    refreshInbox();
+    const sub = AppState.addEventListener('change', (s) => {
+      if (s !== 'active') return;
+      syncSteps().catch(() => {});
+      refreshInbox();
+    });
+    // A push arriving while open bumps the bell; tapping one (even from a cold start) opens its challenge.
+    const received = Notifications.addNotificationReceivedListener(() => refreshInbox());
+    const openFromPush = (r: Notifications.NotificationResponse | null) => {
+      const d = r?.notification.request.content.data as { challengeId?: string; kind?: string } | undefined;
+      const href = d?.challengeId ? hrefFor({ kind: (d.kind ?? 'goal') as never, challengeId: d.challengeId }) : null;
+      if (href) router.push(href as never);
+    };
+    Notifications.getLastNotificationResponseAsync().then(openFromPush).catch(() => {});
+    const tapped = Notifications.addNotificationResponseReceivedListener(openFromPush);
+    return () => {
+      sub.remove();
+      received.remove();
+      tapped.remove();
+    };
   }, [onboarded]);
 
   const loading = !fontsLoaded || !ready || (signedIn && !me);
@@ -66,6 +89,8 @@ export default function RootLayout() {
             <Stack.Screen name="challenge/[id]/index" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="challenge/[id]/results" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
             <Stack.Screen name="challenge/create" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+            <Stack.Screen name="notifications" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="settings/notifications" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="code" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
             <Stack.Screen name="analytics" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="claim/[payoutId]" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />

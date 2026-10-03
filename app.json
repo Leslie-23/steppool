@@ -24,7 +24,9 @@
         "com.apple.security.application-groups": [
           "group.com.steppool.app"
         ]
-      }
+      },
+      "appleTeamId": "LVQVXJXD2Z",
+      "usesAppleSignIn": true
     },
     "android": {
       "adaptiveIcon": {
@@ -102,7 +104,8 @@
         }
       ],
       "expo-font",
-      "@bacons/apple-targets"
+      "@bacons/apple-targets",
+      "expo-apple-authentication"
     ],
     "experiments": {
       "typedRoutes": true,

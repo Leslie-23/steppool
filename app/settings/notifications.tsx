@@ -18,6 +18,7 @@ const ROWS: { kind: NotificationKind; title: string; body: string }[] = [
   { kind: 'reminder', title: 'Reminders', body: 'Challenge starting, and the final hour' },
   { kind: 'results', title: 'Results', body: 'When a challenge settles and payouts land' },
   { kind: 'joins', title: 'New players', body: 'When someone joins a challenge you created' },
+  { kind: 'announcement', title: 'Announcements', body: 'Credit top-ups, new sponsored challenges, big news' },
 ];
 
 type PushStatus = 'granted' | 'denied' | 'undetermined';

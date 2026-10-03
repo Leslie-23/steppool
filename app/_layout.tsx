@@ -91,6 +91,7 @@ export default function RootLayout() {
             <Stack.Screen name="challenge/create" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
             <Stack.Screen name="notifications" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="settings/notifications" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="settings/target" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="code" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
             <Stack.Screen name="analytics" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="claim/[payoutId]" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />

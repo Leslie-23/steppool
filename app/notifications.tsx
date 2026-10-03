@@ -17,6 +17,7 @@ const KIND: Record<NotificationKind, { icon: Icon; tint: string }> = {
   reminder: { icon: 'clock.fill', tint: color.text },
   results: { icon: 'trophy.fill', tint: color.gold },
   joins: { icon: 'person.2.fill', tint: color.volt },
+  announcement: { icon: 'bell.fill', tint: color.gold },
 };
 
 function ago(iso: string) {

@@ -32,6 +32,7 @@ const MAPPING = {
   'clock.fill': 'schedule',
   'plus': 'add',
   'minus': 'remove',
+  'pencil': 'edit',
   'xmark': 'close',
   'link': 'link',
   'ticket.fill': 'confirmation-number',

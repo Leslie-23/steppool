@@ -13,6 +13,7 @@ import { User, type UserDoc } from './models.js';
 import { redis } from './redis.js';
 import { mailEnabled, sendOtpEmail } from './mailer.js';
 import { verifyProviderToken, type Provider } from './oauth.js';
+import { ensureReferralCode } from './rewards.js';
 import { toMe } from './views.js';
 
 const ACCESS_TTL = '15m';
@@ -76,8 +77,9 @@ export async function requireAdmin(req: Request, _res: Response, next: NextFunct
   next();
 }
 
-/** Promotes allow-listed emails to admin on sign-in. */
+/** Sign-in housekeeping: admin role for allow-listed emails, and a referral code to share. */
 async function applyAdminRole(user: UserDoc) {
+  if (!user.referralCode) user.referralCode = await ensureReferralCode(user);
   if (user.role !== 'admin' && config.adminEmails.includes(user.email)) {
     await User.updateOne({ _id: user._id }, { $set: { role: 'admin' } });
     user.role = 'admin';

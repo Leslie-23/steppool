@@ -40,7 +40,8 @@ export default function TodayScreen() {
   }, []);
 
   const steps = today.data?.steps ?? 0;
-  const target = dailyTarget(today.data?.baselineDaily ?? me?.baselineDaily ?? 0);
+  // The user's own target if they set one; otherwise derived from their usual pace.
+  const target = me?.dailyTarget ?? dailyTarget(today.data?.baselineDaily ?? 0);
 
   // "Beat me": the person directly above you, and exactly how far.
   const rows = board.data ?? [];

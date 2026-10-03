@@ -15,7 +15,7 @@ export default function ProfileScreen() {
   const signOut = useSession((s) => s.signOut);
   const today = useApi(api.today);
   const week = today.data?.week ?? [];
-  const target = dailyTarget(me?.baselineDaily ?? 0);
+  const target = me?.dailyTarget ?? dailyTarget(me?.baselineDaily ?? 0);
   // Streak: consecutive days on target, counting back from yesterday (today isn't over yet).
   let streak = 0;
   for (let i = week.length - 2; i >= 0 && week[i].steps >= target; i--) streak++;
@@ -36,7 +36,9 @@ export default function ProfileScreen() {
         </Row>
         <Row gap={space.md}>
           <Stat label="Usual day" value={(me?.baselineDaily ?? 0).toLocaleString()} icon="clock.fill" />
-          <Stat label="Daily target" value={target.toLocaleString()} icon="bolt.fill" />
+          <Press onPress={() => router.push('/settings/target')} style={{ flex: 1 }} accessibilityRole="button" accessibilityLabel={`Daily target ${target}. Change`}>
+            <Stat label={me?.dailyTargetCustom ? 'Your target' : 'Daily target'} value={target.toLocaleString()} icon="bolt.fill" tint={color.volt} editable />
+          </Press>
         </Row>
 
         <Press onPress={() => router.push('/analytics')} accessibilityRole="button" accessibilityLabel="Open analytics">
@@ -92,10 +94,13 @@ export default function ProfileScreen() {
   );
 }
 
-function Stat({ label, value, icon, tint = color.muted }: { label: string; value: string; icon: Parameters<typeof IconSymbol>[0]['name']; tint?: string }) {
+function Stat({ label, value, icon, tint = color.muted, editable }: { label: string; value: string; icon: Parameters<typeof IconSymbol>[0]['name']; tint?: string; editable?: boolean }) {
   return (
     <Card style={{ flex: 1, gap: space.sm }}>
-      <IconSymbol name={icon} size={18} color={tint} />
+      <Row style={{ justifyContent: 'space-between' }}>
+        <IconSymbol name={icon} size={18} color={tint} />
+        {editable ? <IconSymbol name="pencil" size={14} color={color.muted} /> : null}
+      </Row>
       <T style={[type.num, { fontSize: 26 }]}>{value}</T>
       <T v="label">{label}</T>
     </Card>

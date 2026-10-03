@@ -6,6 +6,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Odometer } from '@/components/ds/Odometer';
 import { Card, Pill, Press, Row, Screen, T } from '@/components/ds/primitives';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { EarnAndInvite } from '@/components/wallet/EarnAndInvite';
 import { api } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
 import type { LedgerLine } from '@/shared/contracts';
@@ -17,6 +18,11 @@ const LABEL: Record<LedgerLine['kind'], string> = {
   payout: 'Goal reward',
   refund: 'Refund',
   house_remainder: 'Rounding',
+  walk_reward: 'Daily target hit',
+  streak_bonus: 'Streak bonus',
+  weekly_topup: 'Weekly top-up',
+  referral: 'Referral bonus',
+  admin_grant: 'Gift from StepPool',
 };
 
 export default function WalletScreen() {
@@ -47,6 +53,8 @@ export default function WalletScreen() {
           <T v="caption">credits · for challenge entries</T>
         </View>
 
+        <EarnAndInvite onRedeemed={refresh} />
+
         {claimable.length ? (
           <View style={{ gap: space.md }}>
             <T v="label">Prizes</T>
@@ -76,7 +84,7 @@ export default function WalletScreen() {
               <Row style={{ paddingVertical: space.md, borderBottomWidth: 0.5, borderColor: color.hairline }} gap={space.md}>
                 <View style={{ flex: 1 }}>
                   <T v="body">{LABEL[l.kind]}</T>
-                  <T v="caption">{l.challengeName ?? new Date(l.at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</T>
+                  <T v="caption">{l.challengeName ?? l.note ?? new Date(l.at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</T>
                 </View>
                 <T style={[type.num, { fontSize: 17, color: l.amount > 0 ? color.gold : color.muted }]}>
                   {l.amount > 0 ? '+' : ''}

@@ -41,6 +41,15 @@ EXPO_PUBLIC_API_URL=http://<your-lan-ip>:4000 npx expo run:ios     # or run:andr
 
 The Health screen has a "Skip (dev only)" button for the simulator.
 
+## Sign-in options
+
+- **Email code** works everywhere (Gmail SMTP via `MAIL_USER` / `MAIL_APP_PASSWORD`).
+- **Sign in with Apple** is on for iOS (`usesAppleSignIn`). Server checks the token against Apple's keys with audience `APPLE_AUDIENCES`.
+- **Google** is hidden until configured. In Google Cloud → Credentials create an **iOS** client (bundle `com.steppool.app`) and a **Web** client, then set:
+  - app: `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`, `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`, and at build time `GOOGLE_IOS_URL_SCHEME` (the iOS client's reversed id), then rebuild;
+  - server: `GOOGLE_CLIENT_IDS` = both client ids, comma-separated.
+- Accounts link automatically when Apple/Google report the **same verified email**; unverified emails never link.
+
 ## Verification (how steps are trusted)
 
 Clients upload **raw samples** (interval, count, writer app, recording method), never totals. The server then:

@@ -32,6 +32,10 @@ services:
         sync: false
       - key: MAIL_APP_PASSWORD
         sync: false
+      - key: APPLE_AUDIENCES
+        value: com.steppool.app
+      - key: GOOGLE_CLIENT_IDS
+        sync: false
       - key: APPLE_TEAM_ID
         sync: false
       - key: ANDROID_SHA256_FINGERPRINTS

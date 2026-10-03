@@ -10,12 +10,16 @@ import { useSession } from '@/lib/session';
  * dev server echoes back. Inert in release builds and against a production server.
  */
 export default function DevLogin() {
-  const { email } = useLocalSearchParams<{ email: string }>();
-  const { signIn, setHealthGranted } = useSession();
+  const { email, out } = useLocalSearchParams<{ email?: string; out?: string }>();
+  const { signIn, setHealthGranted, signOut } = useSession();
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (__DEV__ && out) {
+      signOut().then(() => setDone(true));
+      return;
+    }
     const clean = email?.trim().toLowerCase();
     if (!__DEV__ || !clean) return;
     (async () => {
@@ -26,7 +30,7 @@ export default function DevLogin() {
       await signIn(tokens, me);
       setDone(true);
     })().catch((e: Error) => setError(e.message));
-  }, [email, signIn, setHealthGranted]);
+  }, [email, out, signIn, setHealthGranted, signOut]);
 
   if (!__DEV__ || done) return <Redirect href="/" />;
   return (

@@ -7,7 +7,7 @@ import { haptic } from '@/lib/haptics';
 import { spring } from '@/theme/motion';
 import { color, radius, type } from '@/theme/tokens';
 
-export type CodeCellsHandle = { shake: () => void; focus: () => void };
+export type CodeCellsHandle = { shake: () => void; focus: () => void; blur: () => void };
 
 /**
  * Six boxes over a hidden TextInput. Each character pops in with a tick; `shake()` for a wrong code.
@@ -28,6 +28,7 @@ export const CodeCells = forwardRef<CodeCellsHandle, {
       shake.value = withSequence(withTiming(-10, { duration: 50 }), withTiming(10, { duration: 50 }), withTiming(-6, { duration: 50 }), withSpring(0, spring.snappy));
     },
     focus: () => input.current?.focus(),
+    blur: () => input.current?.blur(),
   }));
   const shakeStyle = useAnimatedStyle(() => ({ transform: [{ translateX: shake.value }] }));
 

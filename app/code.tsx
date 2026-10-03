@@ -1,6 +1,6 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
 
 import { CodeCells, type CodeCellsHandle } from '@/components/ds/CodeCells';
@@ -28,11 +28,18 @@ function sanitize(raw: string) {
 
 /** Join by code: for when someone has the code in hand (a screenshot, a group chat, read aloud). */
 export default function EnterCode() {
-  const [code, setCode] = useState('');
+  // `steppool://code?c=ABC234` arrives prefilled (e.g. from a link that only carries the code).
+  const { c: prefill } = useLocalSearchParams<{ c?: string }>();
+  const [code, setCode] = useState(() => (prefill ? sanitize(prefill).slice(0, INVITE_CODE_LENGTH) : ''));
   const [found, setFound] = useState<ChallengeSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const cells = useRef<CodeCellsHandle>(null);
+
+  // A new link while this screen is already open replaces the code.
+  useEffect(() => {
+    if (prefill) setCode(sanitize(prefill).slice(0, INVITE_CODE_LENGTH));
+  }, [prefill]);
 
   useEffect(() => {
     if (code.length < INVITE_CODE_LENGTH) {
@@ -45,6 +52,9 @@ export default function EnterCode() {
       .byCode(code)
       .then((c) => {
         haptic.success();
+        // Get the keyboard out of the way so the preview and the join button are fully visible.
+        cells.current?.blur();
+        Keyboard.dismiss();
         setFound(c);
       })
       .catch((e) => {
@@ -73,21 +83,9 @@ export default function EnterCode() {
             </View>
             <T v="title">Have a code?</T>
             <T v="body" style={{ color: color.muted }}>
-              Every challenge has a 6-character code. Enter it to see the challenge, its prize pool and who's walking — then join in one hold.
+              Enter a challenge's 6-character code to see its prize pool and who's walking, then join in one hold.
             </T>
           </View>
-
-          {!found ? (
-            <Card style={{ gap: space.md, paddingVertical: space.md }}>
-              <T v="label">Where to find it</T>
-              {WHERE.map((w) => (
-                <Row key={w.text} gap={space.md} style={{ alignItems: 'flex-start' }}>
-                  <IconSymbol name={w.icon} size={16} color={color.volt} />
-                  <T v="caption" style={{ flex: 1, color: color.text }}>{w.text}</T>
-                </Row>
-              ))}
-            </Card>
-          ) : null}
 
           <CodeCells
             ref={cells}
@@ -98,7 +96,7 @@ export default function EnterCode() {
             }}
             length={INVITE_CODE_LENGTH}
             sanitize={sanitize}
-            inputProps={{ autoCapitalize: 'characters', autoCorrect: false, keyboardType: 'default', textContentType: 'none' }}
+            inputProps={{ autoCapitalize: 'characters', autoCorrect: false, keyboardType: 'default', textContentType: 'none', autoFocus: !prefill }}
           />
 
           <View style={{ minHeight: 24 }}>
@@ -142,6 +140,17 @@ export default function EnterCode() {
                 </Row>
               </Card>
             </Animated.View>
+          ) : null}
+          {!found ? (
+            <Card style={{ gap: space.md, paddingVertical: space.md }}>
+              <T v="label">Where to find it</T>
+              {WHERE.map((w) => (
+                <Row key={w.text} gap={space.md} style={{ alignItems: 'flex-start' }}>
+                  <IconSymbol name={w.icon} size={16} color={color.volt} />
+                  <T v="caption" style={{ flex: 1, color: color.text }}>{w.text}</T>
+                </Row>
+              ))}
+            </Card>
           ) : null}
         </ScrollView>
 

@@ -4,11 +4,13 @@
   "version": "1.0.0",
   "scripts": {
     "start": "expo start",
-    "reset-project": "node ./scripts/reset-project.js",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "dev:prod": "EXPO_PUBLIC_API_URL=https://steppool-api.onrender.com expo start --dev-client --port 8090 --clear",
+    "dev:local": "EXPO_PUBLIC_API_URL=http://localhost:4400 expo start --dev-client --port 8090 --clear",
+    "server:local": "cd server && npm run build && MONGO_URL=\"mongodb://127.0.0.1:27017/steppool?replicaSet=rs0\" PORT=4400 JOBS_IN_PROCESS=true node dist/index.js"
   },
   "dependencies": {
     "@bacons/apple-targets": "^5.0.0",

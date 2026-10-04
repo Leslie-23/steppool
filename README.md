@@ -50,6 +50,15 @@ The Health screen has a "Skip (dev only)" button for the simulator.
   - server: `GOOGLE_CLIENT_IDS` = both client ids, comma-separated.
 - Accounts link automatically when Apple/Google report the **same verified email**; unverified emails never link.
 
+## Daily development
+
+| Command | App talks to |
+|---|---|
+| `npm run dev:prod` | the live API on Render (real data, real email/Apple/Google sign-in) |
+| `npm run dev:local` | a server on your Mac at `localhost:4400`; start it with `npm run server:local` (needs local Mongo + Redis) |
+
+Both serve the app on port 8090; open it in the StepPool dev build. Switching modes needs a restart (the API address is baked in at bundle time; the scripts pass `--clear`). A physical phone can't reach `localhost`, so use `dev:prod` on devices.
+
 ## Verification (how steps are trusted)
 
 Clients upload **raw samples** (interval, count, writer app, recording method), never totals. The server then:

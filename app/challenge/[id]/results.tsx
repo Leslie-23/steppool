@@ -5,7 +5,9 @@ import Animated, { FadeInDown, FadeInUp, ZoomIn } from 'react-native-reanimated'
 
 import { LeaderRow } from '@/components/arena/LeaderRow';
 import { Coin, CoinAmount } from '@/components/ds/Coin';
+import { ErrorState } from '@/components/ds/EmptyState';
 import { Odometer } from '@/components/ds/Odometer';
+import { Skeleton } from '@/components/ds/Skeleton';
 import { Burst } from '@/components/ds/Particles';
 import { Button, Card, Row, Screen, T } from '@/components/ds/primitives';
 import { ResultCard } from '@/components/share/ShareCards';
@@ -23,7 +25,7 @@ export default function Results() {
   const { width, height } = useWindowDimensions();
   const me = useSession((s) => s.me);
   const setMe = useSession((s) => s.setMe);
-  const { data } = useApi(() => api.results(id), [id]);
+  const { data, error, refresh } = useApi(() => api.results(id), [id], `results:${id}`);
   const [play, setPlay] = useState(0);
   const cardRef = useRef<View>(null);
   const r = data?.me;
@@ -37,7 +39,26 @@ export default function Results() {
     api.me().then(setMe).catch(() => {});
   }, [r, setMe]);
 
-  if (!data) return <Screen>{null}</Screen>;
+  if (!data) {
+    return (
+      <Screen>
+        <View style={{ gap: space.xl, paddingTop: space.xxl, alignItems: 'center' }}>
+          {error ? (
+            <View style={{ alignSelf: 'stretch' }}>
+              <ErrorState onRetry={refresh} message={error.message} />
+            </View>
+          ) : (
+            <>
+              <Skeleton w={120} h={12} />
+              <Skeleton w="70%" h={40} r={12} />
+              <Skeleton h={200} r={24} />
+              <Skeleton h={60} r={16} />
+            </>
+          )}
+        </View>
+      </Screen>
+    );
+  }
   const c = data.challenge;
   const isCash = c.kind === 'cash';
   const won = r?.wonPesewas ? `${ghs(r.wonPesewas)} back` : r?.wonCredits ? `+${r.wonCredits} credits` : r?.prize;

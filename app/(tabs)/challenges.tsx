@@ -1,9 +1,11 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { ChallengeCard, FeaturedCard } from '@/components/arena/ChallengeCard';
+import { EmptyState, ErrorState } from '@/components/ds/EmptyState';
+import { Reveal } from '@/components/ds/Reveal';
+import { ChallengeCardSkeleton, Skeleton } from '@/components/ds/Skeleton';
 import { Card, Press, Row, Screen, T } from '@/components/ds/primitives';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { api } from '@/lib/api';
@@ -17,16 +19,17 @@ function Section({ title, items, offset = 0 }: { title: string; items: Challenge
     <View style={{ gap: space.md }}>
       <T v="label">{title}</T>
       {items.map((c, i) => (
-        <Animated.View key={c.id} entering={FadeInDown.delay((offset + i) * 60).springify()}>
+        <Reveal key={c.id} index={offset + i}>
           <ChallengeCard c={c} />
-        </Animated.View>
+        </Reveal>
       ))}
     </View>
   );
 }
 
 export default function ChallengesScreen() {
-  const { data, refresh } = useApi(api.challenges);
+  const { data, refresh, loading, error } = useApi(api.challenges, [], 'challenges');
+  const nothingToJoin = !!data && !data.featured.length && !data.open.length;
   const [pulling, setPulling] = useState(false);
   const mine = data?.mine.filter((c) => c.status !== 'settled') ?? [];
   const finished = data?.mine.filter((c) => c.status === 'settled') ?? [];
@@ -55,10 +58,19 @@ export default function ChallengesScreen() {
           </Press>
         </Row>
 
+        {loading ? (
+          <View style={{ gap: space.md }}>
+            <Skeleton h={190} r={24} />
+            <ChallengeCardSkeleton />
+          </View>
+        ) : error && !data ? (
+          <ErrorState onRetry={refresh} message={error.message} />
+        ) : null}
+
         {data?.featured.map((c, i) => (
-          <Animated.View key={c.id} entering={FadeInDown.delay(i * 80).springify()}>
+          <Reveal key={c.id} index={i}>
             <FeaturedCard c={c} />
-          </Animated.View>
+          </Reveal>
         ))}
 
         <Press onPress={() => router.push('/code')} accessibilityRole="button" accessibilityLabel="Have a code? Join a friend's challenge">
@@ -78,18 +90,27 @@ export default function ChallengesScreen() {
 
         <Section title="You're in" items={mine} offset={1} />
 
-        <Press onPress={() => router.push('/challenge/create')}>
-          <Card style={{ borderStyle: 'dashed', borderWidth: 1, borderColor: color.faint }}>
-            <Row gap={space.md}>
-              <IconSymbol name="person.2.fill" size={22} color={color.volt} />
-              <View style={{ flex: 1 }}>
-                <T v="heading" style={{ fontSize: 16 }}>Start a private challenge</T>
-                <T v="caption">Your class, your office, your group chat.</T>
-              </View>
-              <IconSymbol name="chevron.right" size={16} color={color.muted} />
-            </Row>
-          </Card>
-        </Press>
+        {nothingToJoin && !mine.length ? (
+          <EmptyState
+            icon="flag.checkered"
+            title="No open challenges right now"
+            body="Most challenges are private: friends join with a code. Be the one who starts it."
+            primary={{ label: 'Start a challenge', onPress: () => router.push('/challenge/create') }}
+          />
+        ) : (
+          <Press onPress={() => router.push('/challenge/create')}>
+            <Card style={{ borderStyle: 'dashed', borderWidth: 1, borderColor: color.faint }}>
+              <Row gap={space.md}>
+                <IconSymbol name="person.2.fill" size={22} color={color.volt} />
+                <View style={{ flex: 1 }}>
+                  <T v="heading" style={{ fontSize: 16 }}>Start a private challenge</T>
+                  <T v="caption">Your class, your office, your group chat.</T>
+                </View>
+                <IconSymbol name="chevron.right" size={16} color={color.muted} />
+              </Row>
+            </Card>
+          </Press>
+        )}
 
         <Section title="Open to join" items={data?.open ?? []} offset={mine.length + 1} />
         <Section title="Finished" items={finished} />

@@ -5,7 +5,9 @@ import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
 import { HourStrip } from '@/components/analytics/HourStrip';
 import { TrendBars } from '@/components/analytics/TrendBars';
+import { EmptyState, ErrorState } from '@/components/ds/EmptyState';
 import { Odometer } from '@/components/ds/Odometer';
+import { Skeleton } from '@/components/ds/Skeleton';
 import { Card, Row, Screen, T } from '@/components/ds/primitives';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { api } from '@/lib/api';
@@ -16,7 +18,8 @@ import { color, space, type } from '@/theme/tokens';
 type Icon = Parameters<typeof IconSymbol>[0]['name'];
 
 export default function AnalyticsScreen() {
-  const { data, refresh } = useApi(api.analytics);
+  const { data, refresh, loading, error } = useApi(api.analytics, [], 'analytics');
+  const noSteps = !!data && data.activeDays === 0;
   const [pulling, setPulling] = useState(false);
   const [table, setTable] = useState(false);
 
@@ -50,7 +53,29 @@ export default function AnalyticsScreen() {
         </Row>
         <T v="title">Analytics</T>
 
-        {!data ? null : (
+        {loading ? (
+          <View style={{ gap: space.xl }}>
+            <View style={{ gap: 8 }}>
+              <Skeleton w={80} h={10} />
+              <Skeleton w={180} h={48} r={12} />
+            </View>
+            <Skeleton h={220} r={24} />
+            <Row gap={space.md}>
+              <Skeleton w="48%" h={96} r={20} />
+              <Skeleton w="48%" h={96} r={20} />
+            </Row>
+          </View>
+        ) : null}
+        {error && !data ? <ErrorState onRetry={refresh} message={error.message} /> : null}
+        {noSteps ? (
+          <EmptyState
+            icon="chart.line.uptrend.xyaxis"
+            title="Your trends start here"
+            body="Once StepPool has a few days of your steps, you'll see your 30-day trend, the hours you walk most and your streaks. Open the app after a walk to sync."
+          />
+        ) : null}
+
+        {!data || noSteps ? null : (
           <>
             {/* Headline: a hero number, not a chart. */}
             <Animated.View entering={FadeInDown.springify()}>

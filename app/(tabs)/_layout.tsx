@@ -5,7 +5,7 @@ import { color } from '@/theme/tokens';
 
 export default function TabLayout() {
   return (
-    <Tabs tabBar={(props) => <TabBar {...props} />} screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: color.bg }, animation: 'shift' }}>
+    <Tabs tabBar={(props) => <TabBar {...props} />} screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: color.bg } }}>
       <Tabs.Screen name="index" options={{ title: 'Today' }} />
       <Tabs.Screen name="challenges" options={{ title: 'Challenges' }} />
       <Tabs.Screen name="wallet" options={{ title: 'Wallet' }} />

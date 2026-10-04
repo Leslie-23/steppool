@@ -13,7 +13,7 @@ import { color, space, type } from '@/theme/tokens';
 export default function ProfileScreen() {
   const me = useSession((s) => s.me);
   const signOut = useSession((s) => s.signOut);
-  const today = useApi(api.today);
+  const today = useApi(api.today, [], 'today');
   const week = today.data?.week ?? [];
   const target = me?.dailyTarget ?? dailyTarget(me?.baselineDaily ?? 0);
   // Streak: consecutive days on target, counting back from yesterday (today isn't over yet).

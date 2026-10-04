@@ -48,6 +48,12 @@ const MAPPING = {
   'chevron.right': 'chevron-right',
   'iphone': 'smartphone',
   'applewatch': 'watch',
+  'wifi.exclamationmark': 'wifi-off',
+  'sparkles': 'auto-awesome',
+  'chart.line.uptrend.xyaxis': 'show-chart',
+  'person.badge.plus': 'person-add',
+  'flag.checkered': 'flag',
+  'tray.fill': 'inbox',
 } as IconMapping;
 
 /**

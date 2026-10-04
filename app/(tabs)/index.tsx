@@ -1,11 +1,13 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { ChallengeCard } from '@/components/arena/ChallengeCard';
 import { WeekBars } from '@/components/arena/WeekBars';
+import { EmptyState, ErrorState } from '@/components/ds/EmptyState';
 import { Odometer } from '@/components/ds/Odometer';
+import { Reveal } from '@/components/ds/Reveal';
+import { ChallengeCardSkeleton, Skeleton } from '@/components/ds/Skeleton';
 import { StepRing } from '@/components/ds/StepRing';
 import { Avatar, Card, Press, Row, Screen, T } from '@/components/ds/primitives';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -27,11 +29,13 @@ function greeting() {
 export default function TodayScreen() {
   const me = useSession((s) => s.me);
   const unread = useInbox((s) => s.unread);
-  const today = useApi(api.today);
-  const lobby = useApi(api.challenges);
+  const today = useApi(api.today, [], 'today');
+  const lobby = useApi(api.challenges, [], 'challenges');
   const live = lobby.data?.mine.filter((c) => c.status === 'live') ?? [];
   const focus = live[0];
-  const board = useApi(() => (focus ? api.leaderboard(focus.id) : Promise.resolve([])), [focus?.id]);
+  const board = useApi(() => (focus ? api.leaderboard(focus.id) : Promise.resolve([])), [focus?.id], focus ? `leaderboard:${focus.id}` : undefined);
+  const firstTime = !!lobby.data && lobby.data.mine.length === 0;
+  const suggestions = lobby.data?.open.slice(0, 2) ?? [];
   const [pulling, setPulling] = useState(false);
 
   // Resume an invite link that was opened before sign-in.
@@ -91,13 +95,17 @@ export default function TodayScreen() {
         <View style={{ alignItems: 'center' }}>
           <StepRing progress={steps / target} size={300}>
             <T v="label">Today</T>
-            <Odometer value={steps} size={56} color={steps >= target ? color.gold : undefined} />
+            {today.loading ? (
+              <Skeleton w={150} h={52} r={12} style={{ marginVertical: 6 }} />
+            ) : (
+              <Odometer value={steps} size={56} color={steps >= target ? color.gold : undefined} />
+            )}
             <T v="caption">of {target.toLocaleString()}</T>
           </StepRing>
         </View>
 
         {above ? (
-          <Animated.View entering={FadeInDown.springify()}>
+          <Reveal>
             <Press onPress={() => router.push(`/challenge/${focus!.id}`)}>
               <Card tone="volt">
                 <Row gap={space.md}>
@@ -113,10 +121,11 @@ export default function TodayScreen() {
                 </Row>
               </Card>
             </Press>
-          </Animated.View>
+          </Reveal>
         ) : null}
 
-        {today.data?.week?.length ? (
+        {/* An all-zero week is just noise for someone new; it appears once there's a day to show. */}
+        {today.data?.week?.some((d) => d.steps > 0) ? (
           <Card>
             <Row style={{ justifyContent: 'space-between', marginBottom: space.lg }}>
               <T v="label">This week</T>
@@ -133,22 +142,49 @@ export default function TodayScreen() {
               <T v="caption" style={{ color: color.volt }}>Browse</T>
             </Press>
           </Row>
-          {live.length ? (
+          {lobby.loading ? (
+            <ChallengeCardSkeleton />
+          ) : lobby.error && !lobby.data ? (
+            <ErrorState onRetry={lobby.refresh} message={lobby.error.message} />
+          ) : live.length ? (
             live.map((c, i) => (
-              <Animated.View key={c.id} entering={FadeInDown.delay(i * 70).springify()}>
+              <Reveal key={c.id} index={i}>
                 <ChallengeCard c={c} />
-              </Animated.View>
+              </Reveal>
             ))
+          ) : firstTime ? (
+            <EmptyState
+              icon="sparkles"
+              title="Your first challenge is one tap away"
+              body="Walking is better with people watching. Here's how it works:"
+              steps={[
+                ['person.2.fill', 'Start a challenge and invite friends, or join one with a code'],
+                ['figure.walk', 'Get a goal based on your own usual pace'],
+                ['trophy.fill', 'Hit it before the timer ends and share the pool'],
+              ]}
+              primary={{ label: 'Start a challenge', onPress: () => router.push('/challenge/create') }}
+              secondary={{ label: 'I have a code', onPress: () => router.push('/code') }}
+            />
           ) : (
-            <Press onPress={() => router.push('/(tabs)/challenges')}>
-              <Card style={{ alignItems: 'center', paddingVertical: space.xl, gap: space.sm }}>
-                <IconSymbol name="trophy.fill" size={28} color={color.faint} />
-                <T v="heading" style={{ fontSize: 16 }}>No live challenges</T>
-                <T v="caption">Join one, or start your own and invite friends.</T>
-              </Card>
-            </Press>
+            <EmptyState
+              icon="trophy.fill"
+              title="Nothing live right now"
+              body={suggestions.length ? 'Jump into an open challenge below, or start one with your friends.' : 'Start a new one and keep your streak going with friends.'}
+              primary={{ label: 'Start a challenge', onPress: () => router.push('/challenge/create') }}
+            />
           )}
         </View>
+
+        {!live.length && suggestions.length ? (
+          <View style={{ gap: space.md }}>
+            <T v="label">Open to join</T>
+            {suggestions.map((c, i) => (
+              <Reveal key={c.id} index={i + 1}>
+                <ChallengeCard c={c} />
+              </Reveal>
+            ))}
+          </View>
+        ) : null}
       </ScrollView>
     </Screen>
   );

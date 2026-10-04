@@ -3,6 +3,8 @@ import { create } from 'zustand';
 
 import type { Me } from '@/shared/contracts';
 
+import { apiCache } from './cache';
+
 const KEY = 'steppool.session.v1';
 
 type Tokens = { access: string; refresh: string };
@@ -58,6 +60,7 @@ export const useSession = create<SessionState>((set, get) => ({
     await persist(get());
   },
   signOut: async () => {
+    apiCache.clear();
     set({ tokens: null, me: null, healthGranted: false });
     await SecureStore.deleteItemAsync(KEY);
   },

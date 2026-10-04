@@ -1,10 +1,12 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { CoinAmount, SpinningCoin } from '@/components/ds/Coin';
+import { EmptyState, ErrorState } from '@/components/ds/EmptyState';
 import { Odometer } from '@/components/ds/Odometer';
+import { Reveal } from '@/components/ds/Reveal';
+import { ListSkeleton, Skeleton } from '@/components/ds/Skeleton';
 import { Card, Pill, Press, Row, Screen, T } from '@/components/ds/primitives';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { CashWallet } from '@/components/cash/CashWallet';
@@ -37,7 +39,7 @@ const LABEL: Record<LedgerLine['kind'], string> = {
 };
 
 export default function WalletScreen() {
-  const { data, refresh } = useApi(api.wallet);
+  const { data, refresh, loading, error } = useApi(api.wallet, [], 'wallet');
   const [pulling, setPulling] = useState(false);
   const [cashKey, setCashKey] = useState(0);
   // Coming back from a withdrawal or a challenge should show the new cash balance.
@@ -65,7 +67,7 @@ export default function WalletScreen() {
         <View style={{ marginTop: space.xxl, alignItems: 'center', gap: space.xs }}>
           <SpinningCoin size={84} />
           <T v="label" style={{ marginTop: space.sm }}>Balance</T>
-          <Odometer value={data?.balance ?? 0} size={72} color={color.gold} />
+          {loading ? <Skeleton w={160} h={64} r={14} style={{ marginVertical: 8 }} /> : <Odometer value={data?.balance ?? 0} size={72} color={color.gold} />}
           <T v="caption">credits to enter challenges with</T>
         </View>
 
@@ -77,7 +79,7 @@ export default function WalletScreen() {
           <View style={{ gap: space.md }}>
             <T v="label">Prizes</T>
             {claimable.map((p, i) => (
-              <Animated.View key={p.id} entering={FadeInDown.delay(i * 60).springify()}>
+              <Reveal key={p.id} index={i}>
                 <Press onPress={() => p.status === 'pending' && router.push(`/claim/${p.id}`)}>
                   <Card tone="gold">
                     <Row gap={space.md}>
@@ -90,15 +92,25 @@ export default function WalletScreen() {
                     </Row>
                   </Card>
                 </Press>
-              </Animated.View>
+              </Reveal>
             ))}
           </View>
         ) : null}
 
         <View style={{ gap: space.xs }}>
           <T v="label" style={{ marginBottom: space.sm }}>Activity</T>
+          {loading ? <ListSkeleton /> : null}
+          {error && !data ? <ErrorState onRetry={refresh} message={error.message} /> : null}
+          {data && !data.lines.length ? (
+            <EmptyState
+              icon="figure.walk"
+              tint={color.gold}
+              title="No activity yet"
+              body="Hit your daily target to earn your first +20 credits. Keep it up 7 days in a row for +100 more."
+            />
+          ) : null}
           {data?.lines.map((l, i) => (
-            <Animated.View key={l.id} entering={FadeInDown.delay(Math.min(i, 10) * 40)}>
+            <Reveal key={l.id} index={i}>
               <Row style={{ paddingVertical: space.md, borderBottomWidth: 0.5, borderColor: color.hairline }} gap={space.md}>
                 <View style={{ flex: 1 }}>
                   <T v="body">{LABEL[l.kind]}</T>
@@ -106,7 +118,7 @@ export default function WalletScreen() {
                 </View>
                 <CoinAmount value={l.amount} tone={l.amount > 0 ? 'gold' : 'silver'} size={16} sign textStyle={l.amount > 0 ? undefined : { color: color.muted }} />
               </Row>
-            </Animated.View>
+            </Reveal>
           ))}
         </View>
         <T v="caption" style={{ textAlign: 'center', fontSize: 11 }}>Credits have no cash value and can't be bought or withdrawn.</T>

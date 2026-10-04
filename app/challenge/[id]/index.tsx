@@ -9,7 +9,9 @@ import { ToastStack, useToasts } from '@/components/arena/Toast';
 import { statusPill } from '@/components/arena/ChallengeCard';
 import { Coin } from '@/components/ds/Coin';
 import { Countdown } from '@/components/ds/Countdown';
+import { EmptyState, ErrorState } from '@/components/ds/EmptyState';
 import { HoldButton } from '@/components/ds/HoldButton';
+import { ChallengeCardSkeleton, Skeleton } from '@/components/ds/Skeleton';
 import { Odometer } from '@/components/ds/Odometer';
 import { Burst, Sparkles } from '@/components/ds/Particles';
 import { StepRing } from '@/components/ds/StepRing';
@@ -36,8 +38,8 @@ export default function ArenaScreen() {
   const { width, height } = useWindowDimensions();
   const me = useSession((s) => s.me);
   const setMe = useSession((s) => s.setMe);
-  const challenge = useApi(() => api.challenge(id), [id]);
-  const board = useApi(() => api.leaderboard(id), [id]);
+  const challenge = useApi(() => api.challenge(id), [id], `challenge:${id}`);
+  const board = useApi(() => api.leaderboard(id), [id], `leaderboard:${id}`);
   const toasts = useToasts();
   const [burst, setBurst] = useState(0);
   const [poolSize, setPoolSize] = useState({ w: 0, h: 0 });
@@ -108,7 +110,33 @@ export default function ArenaScreen() {
     }
   };
 
-  if (!c) return <Screen>{null}</Screen>;
+  if (!c) {
+    return (
+      <Screen>
+        <View style={{ gap: space.xl, marginTop: space.sm }}>
+          <Pressable onPress={() => router.back()} hitSlop={12}>
+            <IconSymbol name="chevron.left" size={22} color={color.text} />
+          </Pressable>
+          {challenge.error ? (
+            <ErrorState onRetry={challenge.refresh} message={challenge.error.message} />
+          ) : (
+            <>
+              <View style={{ gap: space.sm }}>
+                <Skeleton w={56} h={20} r={10} />
+                <Skeleton w="75%" h={34} r={10} />
+                <Skeleton w={140} h={14} />
+              </View>
+              <Skeleton h={150} r={24} />
+              <View style={{ alignItems: 'center' }}>
+                <Skeleton w={220} h={220} r={110} />
+              </View>
+              <ChallengeCardSkeleton />
+            </>
+          )}
+        </View>
+      </Screen>
+    );
+  }
 
   const sponsored = c.kind === 'sponsored';
   const isCash = c.kind === 'cash';
@@ -226,7 +254,18 @@ export default function ArenaScreen() {
               </Row>
             ) : null}
           </Row>
-          {rows.length ? rows.map((r) => <LeaderRow key={r.userId} row={r} isMe={r.userId === me?.id} />) : <T v="caption">No one yet. Be first.</T>}
+          {rows.length ? (
+            rows.map((r) => <LeaderRow key={r.userId} row={r} isMe={r.userId === me?.id} />)
+          ) : board.loading ? (
+            [0, 1, 2].map((i) => <Skeleton key={i} h={52} r={14} style={{ marginBottom: space.sm }} />)
+          ) : (
+            <EmptyState
+              icon="person.badge.plus"
+              title={joined ? "You're the first one here" : 'No one has joined yet'}
+              body={joined ? 'A challenge is more fun with rivals. Send the code to your group chat.' : 'Be first: join now and invite your friends.'}
+              primary={joined ? { label: 'Invite friends', onPress: () => Share.share({ message: inviteText }) } : undefined}
+            />
+          )}
         </View>
 
         {c.status === 'settled' ? (

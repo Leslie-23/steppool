@@ -7,6 +7,6 @@ export default defineConfig({
     hookTimeout: 120_000,
     // Integration tests share one Mongo replica set and Redis db.
     fileParallelism: false,
-    env: { STEPPOOL_DISABLE_QUEUE: '1', REDIS_URL: 'redis://127.0.0.1:6379/9', ADMIN_EMAILS: 'boss@steppool.app' },
+    env: { STEPPOOL_DISABLE_QUEUE: '1', REDIS_URL: 'redis://127.0.0.1:6379/9', ADMIN_EMAILS: 'boss@steppool.app', REVIEW_EMAIL: 'review@steppool.app', REVIEW_CODE: '246810' },
   },
 });

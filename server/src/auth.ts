@@ -102,9 +102,13 @@ authRouter.post('/otp', async (req, res) => {
   const email = Email.parse(req.body?.email);
   await limit(`otp:email:${email}`, 5, 3600);
   await limit(`otp:ip:${req.ip}`, 20, 3600);
-  const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
+  // Store reviewers sign in with a fixed code (REVIEW_EMAIL / REVIEW_CODE); it's never emailed.
+  const isReview = !!config.reviewEmail && !!config.reviewCode && email === config.reviewEmail;
+  const code = isReview ? config.reviewCode! : String(randomInt(0, 1_000_000)).padStart(6, '0');
   await redis().set(`otp:${email}`, JSON.stringify({ h: hash(email, code), n: 0 }), 'EX', OTP_TTL_S);
-  if (mailEnabled()) {
+  if (isReview) {
+    // nothing to send
+  } else if (mailEnabled()) {
     await sendOtpEmail(email, code).catch((e) => {
       console.error('otp email failed', e);
       throw new HttpError(502, "We couldn't send the email. Try again in a moment.");

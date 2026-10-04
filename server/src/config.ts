@@ -22,6 +22,9 @@ export const config = {
   /** Gmail account + app password (SMTP fallback, e.g. local development). */
   mailUser: env.MAIL_USER || undefined,
   mailPass: env.MAIL_APP_PASSWORD?.replace(/\s+/g, '') || undefined,
+  /** App Store / Play review account: this email signs in with a fixed code and is never emailed. */
+  reviewEmail: env.REVIEW_EMAIL?.trim().toLowerCase() || undefined,
+  reviewCode: env.REVIEW_CODE?.trim() || undefined,
   /** Emails that become admins when they sign in. */
   adminEmails: (env.ADMIN_EMAILS ?? '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean),
   /** Sign in with Apple: identity-token audiences (the iOS bundle id). */

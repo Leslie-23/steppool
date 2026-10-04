@@ -225,6 +225,12 @@ describe('auth', () => {
     await request(app).post('/auth/verify').send({ email, code: '000000' }).expect(429);
   });
 
+  it('lets the store review account sign in with its fixed code', async () => {
+    await request(app).post('/auth/otp').send({ email: 'Review@StepPool.app' }).expect(200);
+    const { body } = await request(app).post('/auth/verify').send({ email: 'review@steppool.app', code: '246810' }).expect(200);
+    expect(body.me.email).toBe('review@steppool.app');
+  });
+
   it('refreshes tokens', async () => {
     const email = 'Refresh.Me@Example.com '; // normalised to lowercase, trimmed
     const { body: otp } = await request(app).post('/auth/otp').send({ email });

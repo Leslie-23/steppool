@@ -10,6 +10,7 @@ import { Countdown } from '@/components/ds/Countdown';
 import { Sparkles } from '@/components/ds/Particles';
 import { Card, Pill, Press, Row, T } from '@/components/ds/primitives';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { ghs } from '@/shared/cash';
 import type { ChallengeSummary } from '@/shared/contracts';
 import { spring } from '@/theme/motion';
 import { color, radius, space, type } from '@/theme/tokens';
@@ -93,13 +94,17 @@ export function ChallengeCard({ c }: { c: ChallengeSummary }) {
             {/* Sponsored prizes are cash from the sponsor, not credits. */}
             {c.kind === 'sponsored' ? (
               <T style={[type.num, { fontSize: 22, color: color.gold }]}>GH₵{(c.sponsor?.prizeValueGhs ?? 0).toLocaleString()}</T>
+            ) : c.kind === 'cash' ? (
+              <T style={[type.num, { fontSize: 22, color: color.gold }]}>{ghs(c.poolCredits)}</T>
             ) : (
               <CoinAmount value={c.poolCredits} size={22} />
             )}
           </View>
           <View style={{ alignItems: 'flex-end' }}>
             <T v="label">Entry</T>
-            {c.entryCredits ? <CoinAmount value={c.entryCredits} tone="silver" size={17} /> : <T style={[type.num, { fontSize: 18 }]}>Free</T>}
+            {c.kind === 'cash' ? (
+              <T style={[type.num, { fontSize: 18 }]}>{ghs(c.entryPesewas ?? 0)}</T>
+            ) : c.entryCredits ? <CoinAmount value={c.entryCredits} tone="silver" size={17} /> : <T style={[type.num, { fontSize: 18 }]}>Free</T>}
           </View>
           <View style={{ alignItems: 'flex-end' }}>
             <T v="label">Players</T>

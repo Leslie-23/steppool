@@ -3,12 +3,13 @@ import { randomInt } from 'node:crypto';
 import { Router } from 'express';
 import { Types } from 'mongoose';
 
-import { CreateChallengeBody, INVITE_CODE_ALPHABET, INVITE_CODE_LENGTH, SponsorChallengeBody, type ChallengeResults } from '../../shared/contracts.js';
+import { CreateCashChallengeBody, CreateChallengeBody, INVITE_CODE_ALPHABET, INVITE_CODE_LENGTH, SponsorChallengeBody, type ChallengeResults } from '../../shared/contracts.js';
 import { challengeGoal, DEFAULT_MULTIPLIER } from '../../shared/goals.js';
 
 import { requireAdmin, requireUser } from './auth.js';
+import { cashEnabledFor } from './config.js';
 import { HttpError } from './errors.js';
-import { account, balanceOf, inTransaction, transfer } from './ledger.js';
+import { account, balanceOf, cash, inTransaction, transfer } from './ledger.js';
 import { Challenge, Ledger, Participant, Payout, User, type ChallengeDoc, type ParticipantDoc } from './models.js';
 import { scheduleChallenge } from './queue.js';
 import { notify } from './push.js';
@@ -28,28 +29,34 @@ export function joinDeadline(c: Pick<ChallengeDoc, 'startsAt' | 'endsAt'>) {
   return new Date(c.startsAt.getTime() + Math.min(24 * HOUR, dur / 4));
 }
 
-async function pools(ids: Types.ObjectId[]) {
+async function pools(cs: Pick<ChallengeDoc, '_id' | 'kind'>[]) {
+  const poolOf = (c: Pick<ChallengeDoc, '_id' | 'kind'>) => (c.kind === 'cash' ? cash.pool(c._id) : account.pool(c._id));
   const rows = await Ledger.aggregate<{ _id: string; total: number }>([
-    { $match: { account: { $in: ids.map((id) => account.pool(id)) } } },
+    { $match: { account: { $in: cs.map(poolOf) } } },
     { $group: { _id: '$account', total: { $sum: '$amount' } } },
   ]);
-  return new Map(rows.map((r) => [r._id.slice(5), r.total]));
+  return new Map(rows.map((r) => [r._id.slice(r._id.lastIndexOf(':') + 1), r.total]));
 }
 
 async function summarise(cs: ChallengeDoc[], userId: string) {
   const ids = cs.map((c) => c._id);
-  const [poolMap, mine] = await Promise.all([pools(ids), Participant.find({ userId, challengeId: { $in: ids } }).lean<ParticipantDoc[]>()]);
+  const [poolMap, mine] = await Promise.all([pools(cs), Participant.find({ userId, challengeId: { $in: ids } }).lean<ParticipantDoc[]>()]);
   return Promise.all(
     cs.map(async (c) => {
       const p = mine.find((m) => m.challengeId.equals(c._id));
       // Settled challenges have an empty pool account; show what was paid out instead.
-      const pool = c.status === 'settled' ? (c.perFinisher ?? 0) * (c.finishers ?? 0) : (poolMap.get(String(c._id)) ?? 0);
+      const pool =
+        c.status !== 'settled'
+          ? (poolMap.get(String(c._id)) ?? 0)
+          : c.kind === 'cash'
+            ? c.players * (c.entryPesewas ?? 0)
+            : (c.perFinisher ?? 0) * (c.finishers ?? 0);
       return toSummary(c, pool, p ? { p, rank: await rankOf(String(c._id), p.steps ?? 0) } : undefined);
     }),
   );
 }
 
-async function createChallenge(input: CreateChallengeBody & { kind: 'credits' | 'sponsored'; sponsor?: ChallengeDoc['sponsor']; goalMultiplier?: number; createdBy?: Types.ObjectId }) {
+async function createChallenge(input: Omit<CreateChallengeBody, 'entryCredits'> & { entryCredits?: number; entryPesewas?: number; kind: 'credits' | 'sponsored' | 'cash'; sponsor?: ChallengeDoc['sponsor']; goalMultiplier?: number; createdBy?: Types.ObjectId }) {
   const now = Date.now();
   const startsAt = input.startsAt ? ceilHour(new Date(input.startsAt).getTime()) : ceilHour(now + 60_000);
   if (startsAt < now || startsAt > now + 14 * 24 * HOUR) throw new HttpError(400, 'Start must be within the next 14 days');
@@ -60,7 +67,8 @@ async function createChallenge(input: CreateChallengeBody & { kind: 'credits' | 
         name: input.name,
         kind: input.kind,
         visibility: input.visibility,
-        entryCredits: input.kind === 'sponsored' ? 0 : input.entryCredits,
+        entryCredits: input.kind === 'credits' ? (input.entryCredits ?? 0) : 0,
+        entryPesewas: input.kind === 'cash' ? input.entryPesewas : 0,
         startsAt: new Date(startsAt),
         endsAt: new Date(endsAt),
         syncCutoffAt: new Date(endsAt + SYNC_GRACE_MS),
@@ -84,6 +92,7 @@ export async function joinChallenge(challengeId: string, userId: string) {
   if (!['upcoming', 'live'].includes(c.status) || Date.now() > joinDeadline(c).getTime()) throw new HttpError(409, 'This challenge is closed to new players');
   const user = await User.findById(userId);
   if (!user?.name) throw new HttpError(400, 'Finish your profile first');
+  if (c.kind === 'cash' && !cashEnabledFor(user.email)) throw new HttpError(403, 'Cash challenges are not available yet');
 
   const durationH = (c.endsAt.getTime() - c.startsAt.getTime()) / HOUR;
   const goal = challengeGoal(user.baselineDaily ?? 0, durationH, c.goalMultiplier ?? DEFAULT_MULTIPLIER);
@@ -91,7 +100,9 @@ export async function joinChallenge(challengeId: string, userId: string) {
   try {
     await inTransaction(async (session) => {
       await Participant.create([{ challengeId: c._id, userId: user._id, name: user.name, goal }], { session });
-      if (c.entryCredits > 0) {
+      if (c.kind === 'cash') {
+        await transfer(session, { from: cash.user(user._id), to: cash.pool(c._id), amount: c.entryPesewas, kind: 'entry', challengeId: c._id });
+      } else if (c.entryCredits > 0) {
         await transfer(session, { from: account.user(user._id), to: account.pool(c._id), amount: c.entryCredits, kind: 'entry', challengeId: c._id });
       }
       await Challenge.updateOne({ _id: c._id }, { $inc: { players: 1 } }, { session });
@@ -123,9 +134,11 @@ challengesRouter.get('/', async (req, res) => {
   const userId = req.userId!;
   const myIds = (await Participant.find({ userId }, { challengeId: 1 }).sort({ createdAt: -1 }).limit(30).lean()).map((p) => p.challengeId);
   const active = { status: { $in: ['upcoming', 'live'] as ('upcoming' | 'live')[] } };
+  const user = await User.findById(userId, { email: 1 }).lean();
+  const kinds: ('credits' | 'cash')[] = user && cashEnabledFor(user.email) ? ['credits', 'cash'] : ['credits'];
   const [featured, open, mine] = await Promise.all([
     Challenge.find({ kind: 'sponsored', visibility: 'public', ...active }).sort({ startsAt: 1 }).limit(5).lean<ChallengeDoc[]>(),
-    Challenge.find({ kind: 'credits', visibility: 'public', _id: { $nin: myIds }, ...active }).sort({ players: -1, startsAt: 1 }).limit(20).lean<ChallengeDoc[]>(),
+    Challenge.find({ kind: { $in: kinds }, visibility: 'public', _id: { $nin: myIds }, ...active }).sort({ players: -1, startsAt: 1 }).limit(20).lean<ChallengeDoc[]>(),
     Challenge.find({ _id: { $in: myIds } }).sort({ endsAt: -1 }).lean<ChallengeDoc[]>(),
   ]);
   const joinable = (c: ChallengeDoc) => Date.now() <= joinDeadline(c).getTime();
@@ -168,7 +181,8 @@ challengesRouter.get('/:id/results', async (req, res) => {
   const body: ChallengeResults = {
     challenge: summary,
     finishers: c.finishers ?? 0,
-    perFinisher: c.kind === 'credits' ? c.perFinisher ?? 0 : undefined,
+    perFinisher: c.kind !== 'sponsored' ? c.perFinisher ?? 0 : undefined,
+    perMisser: c.kind === 'cash' ? c.perMisser ?? undefined : undefined,
     top: top.slice(0, 10),
     me: p
       ? {
@@ -177,6 +191,7 @@ challengesRouter.get('/:id/results', async (req, res) => {
           rank: await rankOf(String(c._id), p.steps ?? 0),
           goalHit: p.status === 'finished',
           wonCredits: p.wonCredits ?? undefined,
+          wonPesewas: p.wonPesewas ?? undefined,
           prize: payout?.prizeDescription ?? undefined,
           payoutId: payout ? String(payout._id) : undefined,
           flagged: (p.heldSteps ?? 0) > 0,
@@ -192,6 +207,15 @@ challengesRouter.post('/', async (req, res) => {
   if ((creator?.credits ?? 0) < body.entryCredits) throw new HttpError(409, 'Not enough credits to enter your own challenge');
   const c = await createChallenge({ ...body, kind: 'credits', createdBy: creator!._id });
   res.status(201).json(await joinChallenge(String(c._id), req.userId!));
+});
+
+/** Creates a cash challenge. The creator joins (and pays) through /cash/challenges/:id/join, like everyone else. */
+challengesRouter.post('/cash', async (req, res) => {
+  const body = CreateCashChallengeBody.parse(req.body);
+  const creator = await User.findById(req.userId, { email: 1 }).lean();
+  if (!creator || !cashEnabledFor(creator.email)) throw new HttpError(403, 'Cash challenges are not available yet');
+  const c = await createChallenge({ ...body, kind: 'cash', createdBy: creator._id });
+  res.status(201).json(toSummary(c, 0));
 });
 
 challengesRouter.post('/:id/join', async (req, res) => {

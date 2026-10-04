@@ -1,5 +1,6 @@
 import type { ChallengeSummary, LeaderboardRow, Me } from '../../shared/contracts.js';
 
+import { cashEnabledFor } from './config.js';
 import type { ChallengeDoc, ParticipantDoc, UserDoc } from './models.js';
 import { canRedeemReferral, targetFor } from './rewards.js';
 
@@ -27,6 +28,8 @@ export function toMe(u: UserDoc): Me {
     canRedeemReferral: canRedeemReferral(u as UserDoc & { createdAt?: Date }),
     role: (u.role as 'user' | 'admin') ?? 'user',
     providers: ['email' as const, ...(u.appleSub ? (['apple'] as const) : []), ...(u.googleSub ? (['google'] as const) : [])],
+    cashEnabled: cashEnabledFor(u.email),
+    cashPesewas: u.cashPesewas ?? 0,
   };
 }
 
@@ -39,6 +42,7 @@ export function toSummary(c: ChallengeDoc, poolCredits: number, me?: { p: Partic
     visibility: c.visibility as ChallengeSummary['visibility'],
     inviteCode: c.inviteCode,
     entryCredits: c.entryCredits ?? 0,
+    entryPesewas: c.kind === 'cash' ? (c.entryPesewas ?? 0) : undefined,
     goalMultiplier: c.goalMultiplier ?? 1.15,
     poolCredits,
     players: c.players ?? 0,

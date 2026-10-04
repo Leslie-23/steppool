@@ -40,4 +40,11 @@ export const config = {
   jobsInProcess: env.JOBS_IN_PROCESS === 'true',
   /** Feature flag: real-money entry. Stays off until legal review. */
   paidEntryEnabled: env.PAID_ENTRY_ENABLED === 'true',
+  /** Emails that get real-money challenges while the flag is off, for testing with Paystack test keys. */
+  paidEntryTesters: (env.PAID_ENTRY_TESTERS ?? '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean),
+  /** Paystack secret key (sk_test_… or sk_live_…). Also verifies webhook signatures. */
+  paystackSecret: env.PAYSTACK_SECRET_KEY || undefined,
 };
+
+/** Real-money challenges: everyone once the flag is on, testers before that. */
+export const cashEnabledFor = (email: string) => config.paidEntryEnabled || config.paidEntryTesters.includes(email.toLowerCase());

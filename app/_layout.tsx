@@ -122,6 +122,8 @@ export default function RootLayout() {
             <Stack.Screen name="analytics" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="claim/[payoutId]" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
             <Stack.Screen name="join/[code]" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+            <Stack.Screen name="withdraw" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+            <Stack.Screen name="paid" options={{ presentation: 'transparentModal', animation: 'none' }} />
           </Stack.Protected>
           {__DEV__ ? <Stack.Screen name="dev-login" /> : null}
         </Stack>

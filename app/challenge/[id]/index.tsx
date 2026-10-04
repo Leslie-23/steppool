@@ -4,6 +4,7 @@ import { Pressable, ScrollView, Share, StyleSheet, useWindowDimensions, View } f
 import Animated, { FadeIn, FadeInDown, ZoomIn } from 'react-native-reanimated';
 
 import { LeaderRow } from '@/components/arena/LeaderRow';
+import { CashRules } from '@/components/cash/CashRules';
 import { ToastStack, useToasts } from '@/components/arena/Toast';
 import { statusPill } from '@/components/arena/ChallengeCard';
 import { Coin } from '@/components/ds/Coin';
@@ -17,13 +18,14 @@ import { InviteCard, ResultCard } from '@/components/share/ShareCards';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { api } from '@/lib/api';
 import { haptic } from '@/lib/haptics';
-import { registerPush } from '@/lib/push';
 import { inviteUrl } from '@/lib/invite';
+import { payAndJoin } from '@/lib/pay';
 import { useSession } from '@/lib/session';
 import { shareCard } from '@/lib/share';
 import { useChallengeRoom } from '@/lib/socket';
 import { useApi } from '@/lib/useApi';
 import type { LeaderboardRow } from '@/shared/contracts';
+import { ghs } from '@/shared/cash';
 import { challengeGoal, intensityLabel, stretchText } from '@/shared/goals';
 import { color, space, type } from '@/theme/tokens';
 
@@ -88,14 +90,16 @@ export default function ArenaScreen() {
   const join = async () => {
     setJoining(true);
     try {
-      const updated = await api.join(id);
+      const updated = c?.kind === 'cash' ? await payAndJoin(id) : await api.join(id);
+      if (!updated) {
+        toasts.push({ text: 'Payment not completed. You can try again.', tone: 'muted', icon: 'xmark' });
+        return;
+      }
       challenge.mutate(updated);
       haptic.success();
       setBurst((b) => b + 1);
       board.refresh();
       api.me().then(setMe).catch(() => {});
-      // Now that overtakes and "1 hour left" matter to them, ask for notifications.
-      setTimeout(() => registerPush({ prompt: true }).catch(() => {}), 1800);
     } catch (e) {
       haptic.error();
       toasts.push({ text: (e as Error).message, tone: 'muted', icon: 'xmark' });
@@ -107,13 +111,15 @@ export default function ArenaScreen() {
   if (!c) return <Screen>{null}</Screen>;
 
   const sponsored = c.kind === 'sponsored';
+  const isCash = c.kind === 'cash';
+  const entryText = isCash ? `${ghs(c.entryPesewas ?? 0)} entry` : c.entryCredits ? `${c.entryCredits} credits entry` : 'Free entry';
   const accent = sponsored ? color.gold : color.volt;
   const durationH = (new Date(c.endsAt).getTime() - new Date(c.startsAt).getTime()) / 3600_000;
   const previewGoal = challengeGoal(me?.baselineDaily ?? 0, durationH, c.goalMultiplier);
   const steps = mine?.steps ?? c.me?.steps ?? 0;
   const goal = c.me?.goal ?? previewGoal;
-  const canAfford = (me?.credits ?? 0) >= c.entryCredits;
-  const inviteText = `Join "${c.name}" on StepPool. ${c.entryCredits ? `${c.entryCredits} credits entry` : 'Free entry'}. Hit your goal, share the pool. ${inviteUrl(c.inviteCode)}`;
+  const canAfford = isCash || (me?.credits ?? 0) >= c.entryCredits;
+  const inviteText = `Join "${c.name}" on StepPool. ${entryText}. Hit your goal, share the pool. ${inviteUrl(c.inviteCode)}`;
 
   return (
     <Screen glow={accent}>
@@ -159,6 +165,8 @@ export default function ArenaScreen() {
                 <T style={[type.num, { fontSize: 48, color: color.gold, letterSpacing: -2 }]}>GH₵{c.sponsor?.prizeValueGhs.toLocaleString()}</T>
                 <T v="caption">{c.sponsor?.prizeDescription}</T>
               </>
+            ) : isCash ? (
+              <T style={[type.num, { fontSize: 48, color: color.gold, letterSpacing: -2 }]}>{ghs(c.poolCredits)}</T>
             ) : (
               <Row gap={8} style={{ alignItems: 'center' }}>
                 <Coin size={40} />
@@ -166,7 +174,7 @@ export default function ArenaScreen() {
               </Row>
             )}
             <T v="caption" style={{ marginTop: space.sm }}>
-              {c.players} walking · split between everyone who hits their goal
+              {c.players} walking · {isCash ? 'redivided by who hits their goal' : 'split between everyone who hits their goal'}
             </T>
           </Card>
         </Animated.View>
@@ -196,9 +204,10 @@ export default function ArenaScreen() {
                 <IconSymbol name="figure.walk" size={36} color={accent} />
               </Row>
             </Card>
+            {isCash ? <CashRules entry={c.entryPesewas ?? 0} players={c.players + 1} /> : null}
             <HoldButton
-              tone={sponsored ? 'gold' : 'volt'}
-              label={joining ? 'Joining…' : c.entryCredits ? `Hold to join · ${c.entryCredits} credits` : 'Hold to join · Free'}
+              tone={sponsored || isCash ? 'gold' : 'volt'}
+              label={joining ? 'Joining…' : isCash ? `Hold to pay ${ghs(c.entryPesewas ?? 0)} & join` : c.entryCredits ? `Hold to join · ${c.entryCredits} credits` : 'Hold to join · Free'}
               holdingLabel="Locking you in…"
               onConfirm={join}
               disabled={joining || !canAfford}

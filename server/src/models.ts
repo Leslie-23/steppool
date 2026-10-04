@@ -15,6 +15,10 @@ const UserSchema = new Schema(
      * so concurrent spends serialise on this document. The ledger is the source of truth.
      */
     credits: { type: Number, default: 0 },
+    /** Same idea as `credits`, for real money: a transactional cache of the cash:user ledger, in pesewas. */
+    cashPesewas: { type: Number, default: 0 },
+    /** Paystack transfer recipient for withdrawals, reused while the number and network don't change. */
+    momo: { number: String, network: String, recipientCode: String },
     pushToken: String,
     role: { type: String, enum: ['user', 'admin'], default: 'user' },
     /** The user's own daily target; null means "derive from my usual pace". */
@@ -44,12 +48,16 @@ UserSchema.index({ googleSub: 1 }, { unique: true, partialFilterExpression: { go
 const ChallengeSchema = new Schema(
   {
     name: { type: String, required: true },
-    kind: { type: String, enum: ['credits', 'sponsored'], required: true },
+    kind: { type: String, enum: ['credits', 'sponsored', 'cash'], required: true },
     visibility: { type: String, enum: ['public', 'private'], required: true },
     status: { type: String, enum: ['upcoming', 'live', 'settling', 'settled'], default: 'upcoming', index: true },
     inviteCode: { type: String, required: true, unique: true },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
     entryCredits: { type: Number, default: 0 },
+    /** Cash challenges: entry fee in pesewas. */
+    entryPesewas: { type: Number, default: 0 },
+    /** Cash challenges: what each player who missed got back, in pesewas. */
+    perMisser: Number,
     startsAt: { type: Date, required: true },
     endsAt: { type: Date, required: true },
     /** Late health data is accepted until here; then the challenge is settled. */
@@ -81,6 +89,8 @@ const ParticipantSchema = new Schema(
     goalHitAt: Date,
     status: { type: String, enum: ['active', 'finished', 'missed', 'disqualified'], default: 'active' },
     wonCredits: Number,
+    /** Cash challenges: what this player got back at settlement, in pesewas. */
+    wonPesewas: Number,
   },
   opts,
 );
@@ -132,12 +142,13 @@ HourBucketSchema.index({ userId: 1, hour: 1 }, { unique: true });
 const LedgerSchema = new Schema(
   {
     txId: { type: String, required: true, index: true },
-    account: { type: String, required: true, index: true }, // user:<id> | pool:<challengeId> | house | mint
+    // Credits: user:<id> | pool:<challengeId> | house | mint. Cash (GHS pesewas): the same names prefixed with cash:, plus cash:paystack.
+    account: { type: String, required: true, index: true },
     amount: { type: Number, required: true },
     currency: { type: String, enum: ['CREDIT', 'GHS'], default: 'CREDIT' },
     kind: {
       type: String,
-      enum: ['signup_grant', 'entry', 'payout', 'refund', 'house_remainder', 'walk_reward', 'streak_bonus', 'weekly_topup', 'referral', 'admin_grant'],
+      enum: ['signup_grant', 'entry', 'payout', 'refund', 'house_remainder', 'walk_reward', 'streak_bonus', 'weekly_topup', 'referral', 'admin_grant', 'deposit', 'rake', 'withdrawal', 'withdrawal_reversal'],
       required: true,
     },
     /** Human-readable reason (e.g. an admin grant's note). */
@@ -167,6 +178,36 @@ const PayoutSchema = new Schema(
 );
 PayoutSchema.index({ challengeId: 1, userId: 1, kind: 1 }, { unique: true });
 
+/** A Paystack charge. Confirmed by webhook or by the app polling; whichever comes first credits the wallet, once. */
+const PaymentSchema = new Schema(
+  {
+    reference: { type: String, required: true, unique: true },
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    /** The challenge to join once paid. */
+    challengeId: { type: Schema.Types.ObjectId, ref: 'Challenge' },
+    amount: { type: Number, required: true },
+    status: { type: String, enum: ['pending', 'success', 'failed'], default: 'pending' },
+    channel: String,
+    paidAt: Date,
+  },
+  opts,
+);
+
+/** A MoMo withdrawal through Paystack Transfers. The wallet is debited up front and credited back if the transfer fails. */
+const WithdrawalSchema = new Schema(
+  {
+    reference: { type: String, required: true, unique: true },
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    amount: { type: Number, required: true },
+    network: { type: String, required: true },
+    momoNumber: { type: String, required: true },
+    transferCode: String,
+    status: { type: String, enum: ['pending', 'success', 'failed'], default: 'pending' },
+    reason: String,
+  },
+  opts,
+);
+
 /** In-app inbox. Every notification lands here; push is an extra, gated by the user's prefs. */
 const NotificationSchema = new Schema(
   {
@@ -191,6 +232,8 @@ export const StepSampleModel = mongoose.model('StepSample', StepSampleSchema);
 export const HourBucket = mongoose.model('HourBucket', HourBucketSchema);
 export const Ledger = mongoose.model('Ledger', LedgerSchema);
 export const Payout = mongoose.model('Payout', PayoutSchema);
+export const Payment = mongoose.model('Payment', PaymentSchema);
+export const Withdrawal = mongoose.model('Withdrawal', WithdrawalSchema);
 
 export type UserDoc = InferSchemaType<typeof UserSchema> & { _id: Types.ObjectId };
 export type ChallengeDoc = InferSchemaType<typeof ChallengeSchema> & { _id: Types.ObjectId; createdAt: Date };
@@ -198,5 +241,5 @@ export type ParticipantDoc = InferSchemaType<typeof ParticipantSchema> & { _id: 
 
 export async function connectDb(url: string) {
   await mongoose.connect(url);
-  await Promise.all([User, Challenge, Participant, StepSampleModel, HourBucket, Ledger, Payout, Notification].map((m) => m.syncIndexes()));
+  await Promise.all([User, Challenge, Participant, StepSampleModel, HourBucket, Ledger, Payout, Notification, Payment, Withdrawal].map((m) => m.syncIndexes()));
 }

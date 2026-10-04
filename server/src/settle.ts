@@ -1,5 +1,7 @@
+import { ghs, splitCash } from '../../shared/cash.js';
+
 import { Challenge, Participant, Payout } from './models.js';
-import { account, balanceOf, inTransaction, transfer } from './ledger.js';
+import { account, balanceOf, cash, inTransaction, transfer } from './ledger.js';
 import { notify } from './push.js';
 import { emit, setScore } from './realtime.js';
 import { sumBuckets } from './steps.js';
@@ -26,6 +28,7 @@ export async function settleChallenge(challengeId: string, now = new Date()) {
   if (!c) return null;
   const cid = String(c._id);
   const winnerIds = new Set<string>();
+  let cashSplit: ReturnType<typeof splitCash> | undefined;
   const everyone: string[] = [];
 
   try {
@@ -46,7 +49,25 @@ export async function settleChallenge(challengeId: string, now = new Date()) {
 
     await inTransaction(async (session) => {
       let per = 0;
-      if (c.kind === 'credits') {
+      let perMisser: number | undefined;
+      if (c.kind === 'cash') {
+        // Everyone gets something back: finishers their entry plus a share of the forfeits, missers at least 40%.
+        const pool = cash.pool(c._id);
+        const split = (cashSplit = splitCash(c.entryPesewas, parts.length, finishers.length));
+        per = split.winnerGets;
+        perMisser = split.loserGets;
+        for (const p of parts) {
+          const won = finisherIds.has(String(p._id));
+          const amount = won ? split.winnerGets : split.loserGets;
+          if (amount > 0) await transfer(session, { from: pool, to: cash.user(p.userId), amount, kind: won ? 'payout' : 'refund', challengeId: c._id });
+          p.wonPesewas = amount;
+        }
+        if (split.rake > 0) await transfer(session, { from: pool, to: cash.house, amount: split.rake, kind: 'rake', challengeId: c._id });
+        // Whatever is left (the indivisible remainder, or anything unexpected) goes to the house; the pool ends at zero.
+        const left = await balanceOf(pool, session);
+        if (left > 0) await transfer(session, { from: pool, to: cash.house, amount: left, kind: 'house_remainder', challengeId: c._id });
+        if (left < 0) throw new Error(`Cash pool ${cid} went negative`);
+      } else if (c.kind === 'credits') {
         const pool = await balanceOf(account.pool(c._id), session);
         if (finishers.length) {
           const split = splitPool(pool, finishers.length);
@@ -80,7 +101,7 @@ export async function settleChallenge(challengeId: string, now = new Date()) {
         p.status = finisherIds.has(String(p._id)) ? 'finished' : 'missed';
         await p.save({ session });
       }
-      await Challenge.updateOne({ _id: c._id }, { $set: { status: 'settled', finishers: finishers.length, perFinisher: per } }, { session });
+      await Challenge.updateOne({ _id: c._id }, { $set: { status: 'settled', finishers: finishers.length, perFinisher: per, perMisser } }, { session });
     });
   } catch (e) {
     await Challenge.updateOne({ _id: c._id, status: 'settling' }, { $set: { status: 'live' } });
@@ -90,9 +111,10 @@ export async function settleChallenge(challengeId: string, now = new Date()) {
   emit(cid, 'challenge:settled', { challengeId: cid });
   for (const userId of everyone) {
     const won = winnerIds.has(userId);
+    const cashBody = cashSplit && `${ghs(won ? cashSplit.winnerGets : cashSplit.loserGets)} is in your wallet.`;
     notify(userId, 'results', {
       title: won ? 'You made it 🏆' : `${c.name} is over`,
-      body: won ? `Results are in for ${c.name}. Collect your share.` : 'See how everyone finished.',
+      body: cashBody ?? (won ? `Results are in for ${c.name}. Collect your share.` : 'See how everyone finished.'),
       data: { challengeId: cid, results: '1' },
     });
   }

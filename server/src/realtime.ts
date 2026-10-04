@@ -2,7 +2,7 @@ import type { Types } from 'mongoose';
 
 import type { ServerToClient } from '../../shared/contracts.js';
 
-import { balanceOf, account } from './ledger.js';
+import { account, balanceOf, cash } from './ledger.js';
 import { Challenge, Participant, type ParticipantDoc } from './models.js';
 import { redis } from './redis.js';
 import { toRows } from './views.js';
@@ -50,7 +50,8 @@ export function startLeaderboardTicker(intervalMs = 1000) {
     dirty.clear();
     await Promise.all(
       ids.map(async (id) => {
-        const [rows, c, pool] = await Promise.all([topRows(id), Challenge.findById(id, { players: 1 }).lean(), balanceOf(account.pool(id))]);
+        const c = await Challenge.findById(id, { players: 1, kind: 1 }).lean();
+        const [rows, pool] = await Promise.all([topRows(id), balanceOf(c?.kind === 'cash' ? cash.pool(id) : account.pool(id))]);
         emit(id, 'leaderboard:delta', { challengeId: id, rows, pool, players: c?.players ?? rows.length });
       }),
     ).catch((e) => console.error('leaderboard tick', e));

@@ -15,6 +15,7 @@ import { inviteUrl } from '@/lib/invite';
 import { useSession } from '@/lib/session';
 import { shareCard } from '@/lib/share';
 import { useApi } from '@/lib/useApi';
+import { ghs } from '@/shared/cash';
 import { color, space, type } from '@/theme/tokens';
 
 export default function Results() {
@@ -38,7 +39,8 @@ export default function Results() {
 
   if (!data) return <Screen>{null}</Screen>;
   const c = data.challenge;
-  const won = r?.wonCredits ? `+${r.wonCredits} credits` : r?.prize;
+  const isCash = c.kind === 'cash';
+  const won = r?.wonPesewas ? `${ghs(r.wonPesewas)} back` : r?.wonCredits ? `+${r.wonCredits} credits` : r?.prize;
 
   return (
     <Screen glow={r?.goalHit ? color.gold : color.volt}>
@@ -56,8 +58,13 @@ export default function Results() {
         {r ? (
           <Animated.View entering={ZoomIn.delay(200).springify()}>
             <Card tone={r.goalHit ? 'gold' : undefined} style={{ alignItems: 'center', paddingVertical: space.xxl, gap: space.sm }}>
-              <T v="label">{r.goalHit ? 'You won' : 'Your rank'}</T>
-              {r.wonCredits ? (
+              <T v="label">{isCash ? (r.goalHit ? 'You get back' : 'Returned to you') : r.goalHit ? 'You won' : 'Your rank'}</T>
+              {isCash && r.wonPesewas != null ? (
+                <>
+                  <T style={[type.num, { fontSize: 56, color: r.goalHit ? color.gold : color.text, letterSpacing: -2 }]}>{ghs(r.wonPesewas)}</T>
+                  <T v="caption">Entry {ghs(c.entryPesewas ?? 0)} · now in your wallet</T>
+                </>
+              ) : r.wonCredits ? (
                 <Row gap={6} style={{ alignItems: 'flex-end' }}>
                   <Odometer value={r.wonCredits} size={64} color={color.gold} />
                   <T v="caption" style={{ marginBottom: 14 }}>credits</T>
@@ -77,7 +84,12 @@ export default function Results() {
           <Row style={{ justifyContent: 'space-around' }}>
             <Stat label="Finishers" value={String(data.finishers)} />
             <Stat label="Players" value={String(c.players)} />
-            {data.perFinisher ? (
+            {isCash && data.perFinisher ? (
+              <View style={{ alignItems: 'center' }}>
+                <T style={[type.num, { fontSize: 24, color: color.gold }]}>{ghs(data.perFinisher)}</T>
+                <T v="label">Each finisher</T>
+              </View>
+            ) : data.perFinisher ? (
               <View style={{ alignItems: 'center' }}>
                 <CoinAmount value={data.perFinisher} size={24} />
                 <T v="label">Each got</T>

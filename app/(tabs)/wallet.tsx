@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
-import { useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -7,6 +7,7 @@ import { CoinAmount, SpinningCoin } from '@/components/ds/Coin';
 import { Odometer } from '@/components/ds/Odometer';
 import { Card, Pill, Press, Row, Screen, T } from '@/components/ds/primitives';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { CashWallet } from '@/components/cash/CashWallet';
 import { EarnAndInvite } from '@/components/wallet/EarnAndInvite';
 import { api } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
@@ -24,11 +25,18 @@ const LABEL: Record<LedgerLine['kind'], string> = {
   weekly_topup: 'Weekly top-up',
   referral: 'Referral bonus',
   admin_grant: 'Gift from StepPool',
+  deposit: 'Paid in',
+  rake: 'StepPool fee',
+  withdrawal: 'Withdrawal',
+  withdrawal_reversal: 'Withdrawal returned',
 };
 
 export default function WalletScreen() {
   const { data, refresh } = useApi(api.wallet);
   const [pulling, setPulling] = useState(false);
+  const [cashKey, setCashKey] = useState(0);
+  // Coming back from a withdrawal or a challenge should show the new cash balance.
+  useFocusEffect(useCallback(() => setCashKey((k) => k + 1), []));
   const claimable = data?.payouts.filter((p) => p.kind === 'sponsor_prize') ?? [];
 
   return (
@@ -42,6 +50,7 @@ export default function WalletScreen() {
             tintColor={color.gold}
             onRefresh={async () => {
               setPulling(true);
+              setCashKey((k) => k + 1);
               await refresh();
               setPulling(false);
             }}
@@ -54,6 +63,8 @@ export default function WalletScreen() {
           <Odometer value={data?.balance ?? 0} size={72} color={color.gold} />
           <T v="caption">credits to enter challenges with</T>
         </View>
+
+        <CashWallet refreshKey={cashKey} />
 
         <EarnAndInvite onRedeemed={refresh} />
 

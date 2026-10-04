@@ -5,6 +5,7 @@ import QRCode from 'react-native-qrcode-svg';
 
 import { Coin } from '@/components/ds/Coin';
 import { inviteUrl } from '@/lib/invite';
+import { ghs } from '@/shared/cash';
 import type { ChallengeSummary } from '@/shared/contracts';
 import { color, font } from '@/theme/tokens';
 
@@ -29,6 +30,7 @@ function Frame({ children, accent }: { children: React.ReactNode; accent: string
 /** Invite card: the thing that spreads in WhatsApp groups. */
 export const InviteCard = forwardRef<View, { c: ChallengeSummary; from: string }>(function InviteCard({ c, from }, ref) {
   const sponsored = c.kind === 'sponsored';
+  const isCash = c.kind === 'cash';
   const accent = sponsored ? color.gold : color.volt;
   return (
     <View ref={ref} collapsable={false}>
@@ -37,8 +39,13 @@ export const InviteCard = forwardRef<View, { c: ChallengeSummary; from: string }
         <Text allowFontScaling={false} style={styles.title}>{c.name}</Text>
         {sponsored ? <Text allowFontScaling={false} style={[styles.small, { color: accent }]}>Presented by {c.sponsor?.name}</Text> : null}
         <View style={styles.stats}>
-          <Stat label={sponsored ? 'Prize' : 'Pool'} coin={sponsored ? undefined : 'gold'} value={sponsored ? `GH₵${c.sponsor?.prizeValueGhs.toLocaleString()}` : c.poolCredits.toLocaleString()} accent={color.gold} />
-          <Stat label="Entry" coin={c.entryCredits ? 'silver' : undefined} value={c.entryCredits ? String(c.entryCredits) : 'Free'} />
+          <Stat
+            label={sponsored ? 'Prize' : 'Pool'}
+            coin={sponsored || isCash ? undefined : 'gold'}
+            value={sponsored ? `GH₵${c.sponsor?.prizeValueGhs.toLocaleString()}` : isCash ? ghs(c.poolCredits) : c.poolCredits.toLocaleString()}
+            accent={color.gold}
+          />
+          <Stat label="Entry" coin={!isCash && c.entryCredits ? 'silver' : undefined} value={isCash ? ghs(c.entryPesewas ?? 0) : c.entryCredits ? String(c.entryCredits) : 'Free'} />
           <Stat label="Walking" value={String(c.players)} />
         </View>
         <View style={styles.qrWrap}>

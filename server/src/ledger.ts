@@ -15,11 +15,27 @@ export const account = {
   mint: 'mint',
 };
 
+/** Real money, in pesewas. Kept in separate accounts so it can never mix with credits. */
+export const cash = {
+  user: (id: Types.ObjectId | string) => `cash:user:${id}`,
+  pool: (id: Types.ObjectId | string) => `cash:pool:${id}`,
+  house: 'cash:house',
+  /** Money held at Paystack: deposits come from here, withdrawals go back to it. */
+  paystack: 'cash:paystack',
+};
+
 export class InsufficientCredits extends Error {
   status = 409;
-  constructor() {
-    super('Not enough credits');
+  constructor(message = 'Not enough credits') {
+    super(message);
   }
+}
+
+/** The user document field that caches an account's balance, if it is a user account. */
+function cachedBalance(acct: string): { field: 'credits' | 'cashPesewas'; userId: string } | null {
+  if (acct.startsWith('user:')) return { field: 'credits', userId: acct.slice(5) };
+  if (acct.startsWith('cash:user:')) return { field: 'cashPesewas', userId: acct.slice(10) };
+  return null;
 }
 
 /**
@@ -32,18 +48,23 @@ export async function transfer(
   { from, to, amount, kind, challengeId, note, by, ref }: { from: string; to: string; amount: number; kind: Kind; challengeId?: Types.ObjectId; note?: string; by?: Types.ObjectId; ref?: string },
 ) {
   if (!Number.isInteger(amount) || amount <= 0) throw new Error(`Invalid amount ${amount}`);
+  const isCash = from.startsWith('cash:');
+  if (isCash !== to.startsWith('cash:')) throw new Error(`Cannot move between credits and cash (${from} → ${to})`);
+  const currency = isCash ? 'GHS' : 'CREDIT';
   const txId = randomUUID();
-  if (from.startsWith('user:')) {
-    const res = await User.updateOne({ _id: from.slice(5), credits: { $gte: amount } }, { $inc: { credits: -amount } }, { session });
-    if (res.modifiedCount !== 1) throw new InsufficientCredits();
+  const debit = cachedBalance(from);
+  if (debit) {
+    const res = await User.updateOne({ _id: debit.userId, [debit.field]: { $gte: amount } }, { $inc: { [debit.field]: -amount } }, { session });
+    if (res.modifiedCount !== 1) throw new InsufficientCredits(isCash ? 'Not enough money in your wallet' : undefined);
   }
-  if (to.startsWith('user:')) {
-    await User.updateOne({ _id: to.slice(5) }, { $inc: { credits: amount } }, { session });
+  const credit = cachedBalance(to);
+  if (credit) {
+    await User.updateOne({ _id: credit.userId }, { $inc: { [credit.field]: amount } }, { session });
   }
   await Ledger.insertMany(
     [
-      { txId, account: from, amount: -amount, kind, challengeId, note, by },
-      { txId, account: to, amount, kind, challengeId, note, by, ref },
+      { txId, account: from, amount: -amount, currency, kind, challengeId, note, by },
+      { txId, account: to, amount, currency, kind, challengeId, note, by, ref },
     ],
     { session, ordered: true },
   );

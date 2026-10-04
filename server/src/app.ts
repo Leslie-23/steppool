@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 
 import { consoleRouter } from './admin.js';
 import { authRouter } from './auth.js';
+import { cashRouter, paystackWebhook } from './cash.js';
 import { adminRouter, challengesRouter } from './challenges.js';
 import { errorHandler } from './errors.js';
 import { meRouter, notificationsRouter, payoutsRouter, stepsRouter, walletRouter } from './routes.js';
@@ -15,6 +16,7 @@ export function buildApp() {
   app.set('trust proxy', 1); // Render terminates TLS in front of us
   app.use(helmet({ contentSecurityPolicy: false }));
   app.use(cors());
+  app.use(paystackWebhook); // needs the raw body, so before express.json
   app.use(express.json({ limit: '2mb' }));
 
   app.get('/health', (_req, res) => {
@@ -26,6 +28,7 @@ export function buildApp() {
   app.use('/steps', stepsRouter);
   app.use('/challenges', challengesRouter);
   app.use('/wallet', walletRouter);
+  app.use('/cash', cashRouter);
   app.use('/notifications', notificationsRouter);
   app.use('/payouts', payoutsRouter);
   app.use('/admin', adminRouter);

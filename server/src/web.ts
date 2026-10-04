@@ -22,6 +22,16 @@ webRouter.get('/.well-known/assetlinks.json', (_req, res) => {
   ]);
 });
 
+// Paystack's checkout returns here. Bounce straight back into the app, which closes the in-app browser.
+webRouter.get('/paid', (req, res) => {
+  const reference = String(req.query.reference ?? req.query.trxref ?? '').replace(/[^A-Za-z0-9_-]/g, '');
+  const target = `steppool://paid?reference=${reference}`;
+  res.type('html').send(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="refresh" content="0;url=${target}"><title>Payment received</title>
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#07080A;color:#F4F1EA;font:16px/1.5 -apple-system,system-ui,sans-serif;text-align:center}a{color:#D7FF3A}</style></head>
+<body><main><p>Payment received.</p><p><a href="${target}">Return to StepPool</a></p></main></body></html>`);
+});
+
 // Shown only when the app isn't installed. Carries Open Graph tags so WhatsApp renders a rich preview.
 webRouter.get('/j/:code', async (req, res) => {
   const code = String(req.params.code).toUpperCase().replace(/[^A-Z0-9]/g, '');

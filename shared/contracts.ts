@@ -26,7 +26,7 @@ export const IngestBody = z.object({
 });
 export type IngestBody = z.infer<typeof IngestBody>;
 
-export const ChallengeKind = z.enum(['credits', 'sponsored']);
+export const ChallengeKind = z.enum(['credits', 'sponsored', 'cash']);
 export type ChallengeKind = z.infer<typeof ChallengeKind>;
 
 export const CreateChallengeBody = z.object({
@@ -39,6 +39,12 @@ export const CreateChallengeBody = z.object({
   goalMultiplier: z.number().min(0.8).max(2).optional(),
 });
 export type CreateChallengeBody = z.infer<typeof CreateChallengeBody>;
+
+/** A real-money challenge. Behind the PAID_ENTRY_ENABLED flag. */
+export const CreateCashChallengeBody = CreateChallengeBody.omit({ entryCredits: true }).extend({
+  entryPesewas: z.union([z.literal(1000), z.literal(2000), z.literal(5000), z.literal(10000)]),
+});
+export type CreateCashChallengeBody = z.infer<typeof CreateCashChallengeBody>;
 
 export const SponsorChallengeBody = CreateChallengeBody.extend({
   sponsor: z.object({
@@ -69,7 +75,10 @@ export interface ChallengeSummary {
   visibility: 'public' | 'private';
   inviteCode: string;
   entryCredits: number;
+  /** Cash challenges: entry fee in pesewas. */
+  entryPesewas?: number;
   goalMultiplier: number;
+  /** The pool, in the challenge's own unit: credits, or pesewas for cash challenges. */
   poolCredits: number;
   players: number;
   startsAt: string;
@@ -92,10 +101,12 @@ export interface LeaderboardRow {
 export interface ChallengeResults {
   challenge: ChallengeSummary;
   finishers: number;
-  /** Credits each finisher received (credits challenges). */
+  /** What each finisher received: credits, or pesewas for cash challenges. */
   perFinisher?: number;
+  /** Cash challenges: what each player who missed got back, in pesewas. */
+  perMisser?: number;
   top: LeaderboardRow[];
-  me?: { steps: number; rank: number; goal: number; goalHit: boolean; wonCredits?: number; prize?: string; payoutId?: string; flagged?: boolean };
+  me?: { steps: number; rank: number; goal: number; goalHit: boolean; wonCredits?: number; wonPesewas?: number; prize?: string; payoutId?: string; flagged?: boolean };
 }
 
 export interface Analytics {
@@ -146,7 +157,40 @@ export interface Me {
   role: 'user' | 'admin';
   /** Which sign-in methods are linked. */
   providers: ('email' | 'apple' | 'google')[];
+  /** Real-money challenges are available to this user (feature flag, or a tester). */
+  cashEnabled: boolean;
+  /** Withdrawable cash balance in pesewas. */
+  cashPesewas: number;
 }
+
+export interface CashLine {
+  id: string;
+  amount: number;
+  kind: LedgerKind;
+  challengeName?: string;
+  at: string;
+}
+
+export interface Withdrawal {
+  id: string;
+  amount: number;
+  network: string;
+  momoNumber: string;
+  status: 'pending' | 'success' | 'failed';
+  reason?: string;
+  at: string;
+}
+
+export interface CashWallet {
+  enabled: boolean;
+  balance: number;
+  lines: CashLine[];
+  withdrawals: Withdrawal[];
+  momo?: { number: string; network: string };
+}
+
+/** Joining a cash challenge either completes from the wallet or needs a Paystack payment first. */
+export type CashJoin = { joined: ChallengeSummary } | { checkoutUrl: string; reference: string; amount: number };
 
 export type LedgerKind =
   | 'signup_grant'
@@ -158,7 +202,11 @@ export type LedgerKind =
   | 'streak_bonus'
   | 'weekly_topup'
   | 'referral'
-  | 'admin_grant';
+  | 'admin_grant'
+  | 'deposit'
+  | 'rake'
+  | 'withdrawal'
+  | 'withdrawal_reversal';
 
 export interface LedgerLine {
   id: string;

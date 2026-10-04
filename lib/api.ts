@@ -1,5 +1,8 @@
 import type {
   Analytics,
+  CashJoin,
+  CashWallet,
+  CreateCashChallengeBody,
   InboxItem,
   NotificationPrefs,
   ChallengeResults,
@@ -87,4 +90,9 @@ export const api = {
   wallet: () => request<{ balance: number; lines: LedgerLine[]; payouts: Payout[] }>('GET', '/wallet'),
   claim: (payoutId: string, details: { momoNumber: string; network: 'mtn' | 'telecel' | 'airteltigo' }) =>
     request<Payout>('POST', `/payouts/${payoutId}/claim`, details),
+  cash: () => request<CashWallet>('GET', '/cash'),
+  createCash: (body: CreateCashChallengeBody) => request<ChallengeSummary>('POST', '/challenges/cash', body),
+  cashJoin: (id: string) => request<CashJoin>('POST', `/cash/challenges/${id}/join`),
+  payment: (reference: string) => request<{ status: 'pending' | 'success' | 'failed'; challengeId?: string }>('GET', `/cash/payments/${reference}`),
+  withdraw: (body: { amount: number; momoNumber: string; network: 'MTN' | 'VOD' | 'ATL' }) => request<{ reference: string }>('POST', '/cash/withdraw', body),
 };

@@ -7,19 +7,31 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "env": { "EXPO_PUBLIC_API_URL": "https://steppool-api.onrender.com" }
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://steppool-api.onrender.com"
+      }
     },
     "preview": {
       "distribution": "internal",
-      "android": { "buildType": "apk" },
-      "env": { "EXPO_PUBLIC_API_URL": "https://steppool-api.onrender.com" }
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://steppool-api.onrender.com"
+      }
     },
     "production": {
       "autoIncrement": true,
-      "env": { "EXPO_PUBLIC_API_URL": "https://steppool-api.onrender.com" }
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://steppool-api.onrender.com"
+      }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "ascAppId": "6818976847"
+      }
+    }
   }
 }

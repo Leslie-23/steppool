@@ -12,16 +12,21 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.steppool.app",
       "associatedDomains": [
+        "applinks:steppool.onrender.com",
         "applinks:steppool.onrender.com"
       ],
       "infoPlist": {
         "UIBackgroundModes": [
           "fetch",
+          "processing",
+          "fetch",
           "processing"
-        ]
+        ],
+        "ITSAppUsesNonExemptEncryption": false
       },
       "entitlements": {
         "com.apple.security.application-groups": [
+          "group.com.steppool.app",
           "group.com.steppool.app"
         ]
       },
@@ -92,7 +97,7 @@
         "@kingstinct/react-native-healthkit",
         {
           "NSHealthShareUsageDescription": "StepPool reads your steps to verify your progress in challenges.",
-          "NSHealthUpdateUsageDescription": false,
+          "NSHealthUpdateUsageDescription": "StepPool never writes to Apple Health. This permission is listed only because the health library supports it; StepPool reads your steps to verify challenge progress.",
           "background": true
         }
       ],

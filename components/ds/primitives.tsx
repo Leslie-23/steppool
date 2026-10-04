@@ -11,12 +11,17 @@ import { color, radius, space, type } from '@/theme/tokens';
 
 type Variant = keyof typeof type;
 
+const DISPLAY = new Set<Variant>(['hero', 'title', 'num']);
+
 export function T({ v = 'body', style, ...rest }: TextProps & { v?: Variant }) {
   const flat = StyleSheet.flatten([type[v], style]) as TextStyle;
   // A line box shorter than the font clips glyph tops on iOS. That happens when a caller bumps fontSize
   // but inherits a variant's smaller lineHeight (body is 22), so never let it drop below what the size needs.
   const lineHeight = flat.fontSize ? Math.max(flat.lineHeight ?? 0, Math.ceil(flat.fontSize * 1.2)) : flat.lineHeight;
-  return <Text {...rest} style={[flat, lineHeight ? { lineHeight } : null]} />;
+  // Big display numbers sit in fixed layouts (rings, cards, tiles), so large Dynamic Type sizes would overflow them.
+  // Body copy still scales; display text only a little.
+  const maxFontSizeMultiplier = rest.maxFontSizeMultiplier ?? (DISPLAY.has(v) ? 1.1 : 1.6);
+  return <Text {...rest} maxFontSizeMultiplier={maxFontSizeMultiplier} style={[flat, lineHeight ? { lineHeight } : null]} />;
 }
 
 /** Full-bleed screen with the ambient top glow. Every screen sits on this. */

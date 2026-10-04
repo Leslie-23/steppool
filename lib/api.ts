@@ -27,15 +27,18 @@ let refreshing: Promise<boolean> | null = null;
 async function refresh(): Promise<boolean> {
   const tokens = useSession.getState().tokens;
   if (!tokens) return false;
+  // A network error or a 5xx (Render waking up) must NOT end the session: only an explicit
+  // rejection of the refresh token does. Otherwise the error propagates and the caller retries later.
   const res = await fetch(`${API_URL}/auth/refresh`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ refresh: tokens.refresh }),
   });
-  if (!res.ok) {
+  if (res.status === 401 || res.status === 403) {
     await useSession.getState().signOut();
     return false;
   }
+  if (!res.ok) throw new ApiError(res.status, 'Server unavailable, try again shortly');
   await useSession.getState().setTokens(await res.json());
   return true;
 }

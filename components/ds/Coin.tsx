@@ -26,7 +26,7 @@ export function CoinAmount({ value, tone = 'gold', size = 18, textStyle, sign }:
   return (
     <View style={styles.row} accessible accessibilityLabel={`${text} credits`}>
       <Coin tone={tone} size={size * 1.05} />
-      <Text style={[type.num, { fontSize: size, lineHeight: Math.ceil(size * 1.2), color: tone === 'gold' ? color.gold : color.text }, textStyle]}>{text}</Text>
+      <Text allowFontScaling={false} style={[type.num, { fontSize: size, lineHeight: Math.ceil(size * 1.2), color: tone === 'gold' ? color.gold : color.text }, textStyle]}>{text}</Text>
     </View>
   );
 }

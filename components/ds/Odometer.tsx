@@ -23,7 +23,7 @@ export function Odometer({ value, size = 64, color, style }: { value: number; si
         return (
           <Animated.View key={key} layout={LinearTransition.springify().damping(20)} entering={FadeIn.duration(220)} exiting={FadeOut.duration(120)}>
             {ch === ',' ? (
-              <Text style={[textStyle, { opacity: 0.35 }]}>,</Text>
+              <Text allowFontScaling={false} style={[textStyle, { opacity: 0.35 }]}>,</Text>
             ) : (
               <Digit digit={Number(ch)} lineHeight={lineHeight} textStyle={textStyle} delay={(chars.length - i) * 18} />
             )}
@@ -43,10 +43,14 @@ const Digit = memo(function Digit({ digit, lineHeight, textStyle, delay }: { dig
   return (
     <View style={{ height: lineHeight, overflow: 'hidden' }}>
       <Animated.View style={anim}>
+        {/* Each digit sits in a box of exactly one line. The roll offset is computed from that height,
+            so a digit must never be taller than its box: no font scaling, no growth past lineHeight. */}
         {DIGITS.map((d) => (
-          <Text key={d} style={textStyle}>
-            {d}
-          </Text>
+          <View key={d} style={{ height: lineHeight, justifyContent: 'center' }}>
+            <Text allowFontScaling={false} numberOfLines={1} style={textStyle}>
+              {d}
+            </Text>
+          </View>
         ))}
       </Animated.View>
     </View>

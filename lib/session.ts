@@ -20,8 +20,9 @@ type SessionState = {
   signOut: () => Promise<void>;
 };
 
-async function persist(s: Pick<SessionState, 'tokens' | 'healthGranted'>) {
-  await SecureStore.setItemAsync(KEY, JSON.stringify({ tokens: s.tokens, healthGranted: s.healthGranted }));
+async function persist(s: Pick<SessionState, 'tokens' | 'healthGranted' | 'me'>) {
+  // `me` is cached so the app opens straight into the signed-in UI, even offline or while the API wakes.
+  await SecureStore.setItemAsync(KEY, JSON.stringify({ tokens: s.tokens, healthGranted: s.healthGranted, me: s.me }));
 }
 
 export const useSession = create<SessionState>((set, get) => ({
@@ -33,8 +34,8 @@ export const useSession = create<SessionState>((set, get) => ({
     try {
       const raw = await SecureStore.getItemAsync(KEY);
       if (raw) {
-        const saved = JSON.parse(raw) as { tokens: Tokens | null; healthGranted?: boolean };
-        set({ tokens: saved.tokens, healthGranted: !!saved.healthGranted });
+        const saved = JSON.parse(raw) as { tokens: Tokens | null; healthGranted?: boolean; me?: Me | null };
+        set({ tokens: saved.tokens, healthGranted: !!saved.healthGranted, me: saved.tokens ? (saved.me ?? null) : null });
       }
     } finally {
       set({ ready: true });
@@ -48,7 +49,10 @@ export const useSession = create<SessionState>((set, get) => ({
     set({ tokens });
     await persist(get());
   },
-  setMe: (me) => set({ me }),
+  setMe: (me) => {
+    set({ me });
+    persist(get()).catch(() => {});
+  },
   setHealthGranted: async (healthGranted) => {
     set({ healthGranted });
     await persist(get());

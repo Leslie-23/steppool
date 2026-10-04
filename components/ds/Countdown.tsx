@@ -24,5 +24,5 @@ export function useNow(intervalMs = 1000) {
 
 export function Countdown({ to, style }: { to: string; style?: TextStyle }) {
   const now = useNow();
-  return <Text style={[type.num, { fontSize: 15 }, style]}>{formatLeft(new Date(to).getTime() - now)}</Text>;
+  return <Text allowFontScaling={false} style={[type.num, { fontSize: 15 }, style]}>{formatLeft(new Date(to).getTime() - now)}</Text>;
 }

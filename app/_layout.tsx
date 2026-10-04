@@ -15,7 +15,7 @@ import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 
 import { Intro } from '@/components/Intro';
-import { api } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
 import { hrefFor, useInbox } from '@/lib/inbox';
 import { registerPush } from '@/lib/push';
 import { useSession } from '@/lib/session';
@@ -42,10 +42,26 @@ export default function RootLayout() {
     hydrate();
   }, [hydrate]);
 
-  // Load the profile once a session exists so the guards know whether onboarding is finished.
+  // Refresh the profile whenever a session exists. Only a 401 (session truly rejected) signs out;
+  // network errors and a sleeping server keep the cached profile and retry.
   useEffect(() => {
-    if (signedIn && !me) api.me().then(setMe).catch(() => signOut());
-  }, [signedIn, me, setMe, signOut]);
+    if (!signedIn) return;
+    let stopped = false;
+    let attempt = 0;
+    const load = () =>
+      api
+        .me()
+        .then((m) => !stopped && setMe(m))
+        .catch((e) => {
+          if (stopped) return;
+          if (e instanceof ApiError && e.status === 401) signOut();
+          else setTimeout(load, Math.min(30_000, 2000 * 2 ** attempt++));
+        });
+    load();
+    return () => {
+      stopped = true;
+    };
+  }, [signedIn, setMe, signOut]);
 
   const onboarded = signedIn && !!me?.name && healthGranted;
 

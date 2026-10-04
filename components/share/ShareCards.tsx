@@ -19,8 +19,8 @@ function Frame({ children, accent }: { children: React.ReactNode; accent: string
       <View style={[styles.orb, { backgroundColor: accent }]} />
       {children}
       <View style={styles.brand}>
-        <Text style={[styles.brandText, { color: accent }]}>STEPPOOL</Text>
-        <Text style={styles.small}>Walk. Hit your goal. Share the pool.</Text>
+        <Text allowFontScaling={false} style={[styles.brandText, { color: accent }]}>STEPPOOL</Text>
+        <Text allowFontScaling={false} style={styles.small}>Walk. Hit your goal. Share the pool.</Text>
       </View>
     </View>
   );
@@ -33,9 +33,9 @@ export const InviteCard = forwardRef<View, { c: ChallengeSummary; from: string }
   return (
     <View ref={ref} collapsable={false}>
       <Frame accent={accent}>
-        <Text style={styles.kicker}>{from.toUpperCase()} INVITED YOU</Text>
-        <Text style={styles.title}>{c.name}</Text>
-        {sponsored ? <Text style={[styles.small, { color: accent }]}>Presented by {c.sponsor?.name}</Text> : null}
+        <Text allowFontScaling={false} style={styles.kicker}>{from.toUpperCase()} INVITED YOU</Text>
+        <Text allowFontScaling={false} style={styles.title}>{c.name}</Text>
+        {sponsored ? <Text allowFontScaling={false} style={[styles.small, { color: accent }]}>Presented by {c.sponsor?.name}</Text> : null}
         <View style={styles.stats}>
           <Stat label={sponsored ? 'Prize' : 'Pool'} coin={sponsored ? undefined : 'gold'} value={sponsored ? `GH₵${c.sponsor?.prizeValueGhs.toLocaleString()}` : c.poolCredits.toLocaleString()} accent={color.gold} />
           <Stat label="Entry" coin={c.entryCredits ? 'silver' : undefined} value={c.entryCredits ? String(c.entryCredits) : 'Free'} />
@@ -46,9 +46,9 @@ export const InviteCard = forwardRef<View, { c: ChallengeSummary; from: string }
             <QRCode value={inviteUrl(c.inviteCode)} size={112} backgroundColor="#F4F1EA" color="#07080A" />
           </View>
           <View style={{ flex: 1, gap: 6 }}>
-            <Text style={styles.small}>Join with code</Text>
-            <Text style={[styles.code, { color: accent }]}>{c.inviteCode}</Text>
-            <Text style={styles.small}>Hit your personal goal to share the pool.</Text>
+            <Text allowFontScaling={false} style={styles.small}>Join with code</Text>
+            <Text allowFontScaling={false} style={[styles.code, { color: accent }]}>{c.inviteCode}</Text>
+            <Text allowFontScaling={false} style={styles.small}>Hit your personal goal to share the pool.</Text>
           </View>
         </View>
       </Frame>
@@ -63,15 +63,15 @@ export const ResultCard = forwardRef<View, { c: ChallengeSummary; name: string; 
     return (
       <View ref={ref} collapsable={false}>
         <Frame accent={accent}>
-          <Text style={styles.kicker}>{c.name.toUpperCase()}</Text>
-          <Text style={[styles.hero, { color: accent }]}>{steps.toLocaleString()}</Text>
-          <Text style={styles.title}>steps</Text>
+          <Text allowFontScaling={false} style={styles.kicker}>{c.name.toUpperCase()}</Text>
+          <Text allowFontScaling={false} style={[styles.hero, { color: accent }]}>{steps.toLocaleString()}</Text>
+          <Text allowFontScaling={false} style={styles.title}>steps</Text>
           <View style={styles.stats}>
             <Stat label="Rank" value={`#${rank}`} />
             <Stat label="Goal" value={goalHit ? 'Hit ✓' : 'Missed'} accent={goalHit ? color.gold : undefined} />
             {won ? <Stat label="Won" value={won} accent={color.gold} /> : <Stat label="Players" value={String(c.players)} />}
           </View>
-          <Text style={[styles.small, { marginTop: 28 }]}>{name} on StepPool · code {c.inviteCode}</Text>
+          <Text allowFontScaling={false} style={[styles.small, { marginTop: 28 }]}>{name} on StepPool · code {c.inviteCode}</Text>
         </Frame>
       </View>
     );
@@ -81,10 +81,10 @@ export const ResultCard = forwardRef<View, { c: ChallengeSummary; name: string; 
 function Stat({ label, value, accent, coin }: { label: string; value: string; accent?: string; coin?: 'gold' | 'silver' }) {
   return (
     <View style={{ flex: 1 }}>
-      <Text style={styles.statLabel}>{label.toUpperCase()}</Text>
+      <Text allowFontScaling={false} style={styles.statLabel}>{label.toUpperCase()}</Text>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 }}>
         {coin ? <Coin tone={coin} size={20} /> : null}
-        <Text style={[styles.statValue, { marginTop: 0 }, accent ? { color: accent } : null]}>{value}</Text>
+        <Text allowFontScaling={false} style={[styles.statValue, { marginTop: 0 }, accent ? { color: accent } : null]}>{value}</Text>
       </View>
     </View>
   );

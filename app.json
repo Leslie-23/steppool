@@ -12,13 +12,10 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.steppool.app",
       "associatedDomains": [
-        "applinks:steppool.onrender.com",
         "applinks:steppool.onrender.com"
       ],
       "infoPlist": {
         "UIBackgroundModes": [
-          "fetch",
-          "processing",
           "fetch",
           "processing"
         ],
@@ -26,7 +23,6 @@
       },
       "entitlements": {
         "com.apple.security.application-groups": [
-          "group.com.steppool.app",
           "group.com.steppool.app"
         ]
       },
@@ -141,6 +137,14 @@
         "projectId": "dac576f9-f10f-4200-bd27-6715ccc0fad5"
       }
     },
-    "owner": "lesliepaul-23-2"
+    "owner": "lesliepaul-23-2",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/dac576f9-f10f-4200-bd27-6715ccc0fad5",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    }
   }
 }

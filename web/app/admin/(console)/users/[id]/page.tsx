@@ -30,6 +30,7 @@ export default function UserDetail() {
   const [grant, setGrant] = useState({ amount: 100, reason: "" });
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [push, setPush] = useState<{ ok: boolean; step: string; detail: string } | "sending" | null>(null);
 
   const load = useCallback(() => api<Detail>(`/admin/users/${id}`).then(setD).catch((e) => setMsg(e.message)), [id]);
   useEffect(() => {
@@ -49,6 +50,15 @@ export default function UserDetail() {
       setMsg((err as Error).message);
     } finally {
       setBusy(false);
+    }
+  };
+
+  const testPush = async () => {
+    setPush("sending");
+    try {
+      setPush(await api<{ ok: boolean; step: string; detail: string }>(`/admin/users/${id}/test-push`, { method: "POST" }));
+    } catch (err) {
+      setPush({ ok: false, step: "request", detail: (err as Error).message });
     }
   };
 
@@ -85,6 +95,16 @@ export default function UserDetail() {
         </div>
         {msg ? <p className="text-sm text-muted">{msg}</p> : null}
       </form>
+
+      <div className="card p-5 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div className="label">Push notifications</div>
+          <p className="text-sm mt-1" style={{ color: push === "sending" || !push ? "var(--muted)" : push.ok ? "var(--volt)" : "var(--danger)" }}>
+            {push === "sending" ? "Sending and waiting for Apple/Google…" : push ? `${push.ok ? "✓" : "✕"} ${push.step}: ${push.detail}` : "Send a test push to this user's phone."}
+          </p>
+        </div>
+        <button className="btn" onClick={testPush} disabled={push === "sending"}>Send test push</button>
+      </div>
 
       <section className="grid lg:grid-cols-2 gap-3">
         <div className="card p-5">

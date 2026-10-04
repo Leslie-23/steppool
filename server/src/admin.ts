@@ -171,6 +171,21 @@ consoleRouter.post('/broadcast', async (req, res) => {
   res.json({ inbox, pushed, pushTargets: pushes.length });
 });
 
+/** Sends one push to one user and waits for Expo's receipt, so the console shows exactly where delivery fails. */
+consoleRouter.post('/users/:id/test-push', async (req, res) => {
+  const u = await User.findById(req.params.id, { pushToken: 1 }).lean();
+  if (!u) return void res.status(404).json({ error: 'No such user' });
+  if (!u.pushToken) return void res.json({ ok: false, step: 'token', detail: 'No push token: the user has not allowed notifications on a device yet' });
+  if (!Expo.isExpoPushToken(u.pushToken)) return void res.json({ ok: false, step: 'token', detail: `Not an Expo token: ${u.pushToken}` });
+  const [ticket] = await expo.sendPushNotificationsAsync([{ to: u.pushToken, title: 'StepPool test', body: 'Push notifications are working.', sound: 'default', channelId: 'challenges', data: { kind: 'announcement' } }]);
+  if (ticket.status !== 'ok') return void res.json({ ok: false, step: 'ticket', detail: `${ticket.message} ${ticket.details?.error ?? ''}`.trim() });
+  await new Promise((r) => setTimeout(r, 5000));
+  const receipt = (await expo.getPushNotificationReceiptsAsync([ticket.id]))[ticket.id];
+  if (!receipt) return void res.json({ ok: true, step: 'sent', detail: 'Accepted by Expo; Apple/Google receipt not ready yet' });
+  if (receipt.status !== 'ok') return void res.json({ ok: false, step: 'receipt', detail: `${receipt.message} ${receipt.details?.error ?? ''}`.trim() });
+  res.json({ ok: true, step: 'delivered', detail: `Delivered to Apple/Google for ${u.pushToken.slice(0, 30)}…` });
+});
+
 consoleRouter.get('/challenges', async (_req, res) => {
   const rows = await Challenge.find({}).sort({ createdAt: -1 }).limit(100).lean();
   const pools = new Map(

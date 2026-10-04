@@ -12,8 +12,8 @@ Notifications.setNotificationHandler({
 export let pushStatus = 'not attempted';
 
 /**
- * Hands the Expo push token to the server. With `prompt`, asks for permission first; we only do that
- * at a moment with obvious value (joining a challenge), never cold on launch.
+ * Hands the Expo push token to the server. With `prompt`, asks for permission first (after onboarding,
+ * and from notification settings).
  */
 export async function registerPush({ prompt = false } = {}) {
   if (Platform.OS === 'web') return;

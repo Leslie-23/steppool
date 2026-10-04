@@ -69,7 +69,8 @@ export default function RootLayout() {
     if (!onboarded) return;
     syncSteps().catch(() => {});
     registerBackgroundSync().catch(() => {});
-    registerPush().catch(() => {});
+    // Asked once, right after onboarding; iOS shows the system prompt only the first time, so later launches just refresh the token.
+    registerPush({ prompt: true }).catch(() => {});
     const refreshInbox = useInbox.getState().refresh;
     refreshInbox();
     const sub = AppState.addEventListener('change', (s) => {

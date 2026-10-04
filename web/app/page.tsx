@@ -45,7 +45,7 @@ export default function Home() {
             <div className="num text-2xl font-bold mt-1">Sponsor a challenge</div>
             <p className="text-muted text-sm mt-1">Put your name in front of thousands of people walking every day.</p>
           </div>
-          <a className="btn btn-gold h-12 px-6" href="mailto:leslieajayi27@gmail.com?subject=Sponsoring%20a%20StepPool%20challenge">Talk to us</a>
+          <Link className="btn btn-gold h-12 px-6" href="/sponsor">Sponsor a challenge</Link>
         </div>
       </section>
     </main>

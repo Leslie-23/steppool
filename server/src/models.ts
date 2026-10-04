@@ -74,6 +74,8 @@ const ChallengeSchema = new Schema(
     finishers: Number,
     perFinisher: Number,
     lastHourPushed: { type: Boolean, default: false },
+    /** Set when a sponsor paid for this challenge on the website; its prize can then be sent through Paystack. */
+    sponsorOrderId: { type: Schema.Types.ObjectId, ref: 'SponsorOrder' },
   },
   opts,
 );
@@ -148,7 +150,7 @@ const LedgerSchema = new Schema(
     currency: { type: String, enum: ['CREDIT', 'GHS'], default: 'CREDIT' },
     kind: {
       type: String,
-      enum: ['signup_grant', 'entry', 'payout', 'refund', 'house_remainder', 'walk_reward', 'streak_bonus', 'weekly_topup', 'referral', 'admin_grant', 'deposit', 'rake', 'withdrawal', 'withdrawal_reversal'],
+      enum: ['signup_grant', 'entry', 'payout', 'refund', 'house_remainder', 'walk_reward', 'streak_bonus', 'weekly_topup', 'referral', 'admin_grant', 'deposit', 'rake', 'withdrawal', 'withdrawal_reversal', 'sponsor_fund', 'sponsor_fee', 'prize_payout', 'prize_payout_reversal'],
       required: true,
     },
     /** Human-readable reason (e.g. an admin grant's note). */
@@ -171,8 +173,12 @@ const PayoutSchema = new Schema(
     kind: { type: String, enum: ['credits', 'sponsor_prize'], required: true },
     amount: Number,
     prizeDescription: String,
-    status: { type: String, enum: ['pending', 'claimed', 'fulfilled'], default: 'pending' },
+    // sending: a Paystack transfer is in flight.
+    status: { type: String, enum: ['pending', 'claimed', 'sending', 'fulfilled'], default: 'pending' },
     claim: { momoNumber: String, network: String, at: Date },
+    /** Paystack transfer reference, when the prize was sent through Paystack. */
+    transferRef: String,
+    lastError: String,
   },
   opts,
 );
@@ -189,6 +195,30 @@ const PaymentSchema = new Schema(
     status: { type: String, enum: ['pending', 'success', 'failed'], default: 'pending' },
     channel: String,
     paidAt: Date,
+  },
+  opts,
+);
+
+/** A brand's paid order for a sponsored challenge. The challenge is created once Paystack confirms the payment. */
+const SponsorOrderSchema = new Schema(
+  {
+    reference: { type: String, required: true, unique: true },
+    company: { type: String, required: true },
+    email: { type: String, required: true },
+    phone: String,
+    logoUrl: String,
+    challengeName: { type: String, required: true },
+    prizeDescription: { type: String, required: true },
+    prizeValueGhs: { type: Number, required: true },
+    maxWinners: Number,
+    durationHours: { type: Number, required: true },
+    startsAt: Date,
+    prizePesewas: { type: Number, required: true },
+    feePesewas: { type: Number, required: true },
+    amount: { type: Number, required: true },
+    status: { type: String, enum: ['pending', 'paid', 'failed'], default: 'pending', index: true },
+    paidAt: Date,
+    challengeId: { type: Schema.Types.ObjectId, ref: 'Challenge' },
   },
   opts,
 );
@@ -234,6 +264,7 @@ export const Ledger = mongoose.model('Ledger', LedgerSchema);
 export const Payout = mongoose.model('Payout', PayoutSchema);
 export const Payment = mongoose.model('Payment', PaymentSchema);
 export const Withdrawal = mongoose.model('Withdrawal', WithdrawalSchema);
+export const SponsorOrder = mongoose.model('SponsorOrder', SponsorOrderSchema);
 
 export type UserDoc = InferSchemaType<typeof UserSchema> & { _id: Types.ObjectId };
 export type ChallengeDoc = InferSchemaType<typeof ChallengeSchema> & { _id: Types.ObjectId; createdAt: Date };
@@ -241,5 +272,5 @@ export type ParticipantDoc = InferSchemaType<typeof ParticipantSchema> & { _id: 
 
 export async function connectDb(url: string) {
   await mongoose.connect(url);
-  await Promise.all([User, Challenge, Participant, StepSampleModel, HourBucket, Ledger, Payout, Notification, Payment, Withdrawal].map((m) => m.syncIndexes()));
+  await Promise.all([User, Challenge, Participant, StepSampleModel, HourBucket, Ledger, Payout, Notification, Payment, Withdrawal, SponsorOrder].map((m) => m.syncIndexes()));
 }

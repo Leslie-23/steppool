@@ -15,6 +15,7 @@ import { scheduleChallenge } from './queue.js';
 import { notify } from './push.js';
 import { markDirty, rankOf, setScore, topRows } from './realtime.js';
 import { sumBuckets } from './steps.js';
+import { sendPrize } from './sponsor.js';
 import { toSummary } from './views.js';
 
 const HOUR = 3_600_000;
@@ -56,7 +57,7 @@ async function summarise(cs: ChallengeDoc[], userId: string) {
   );
 }
 
-async function createChallenge(input: Omit<CreateChallengeBody, 'entryCredits'> & { entryCredits?: number; entryPesewas?: number; kind: 'credits' | 'sponsored' | 'cash'; sponsor?: ChallengeDoc['sponsor']; goalMultiplier?: number; createdBy?: Types.ObjectId }) {
+export async function createChallenge(input: Omit<CreateChallengeBody, 'entryCredits'> & { entryCredits?: number; entryPesewas?: number; kind: 'credits' | 'sponsored' | 'cash'; sponsor?: ChallengeDoc['sponsor']; goalMultiplier?: number; createdBy?: Types.ObjectId }) {
   const now = Date.now();
   const startsAt = input.startsAt ? ceilHour(new Date(input.startsAt).getTime()) : ceilHour(now + 60_000);
   if (startsAt < now || startsAt > now + 14 * 24 * HOUR) throw new HttpError(400, 'Start must be within the next 14 days');
@@ -150,29 +151,36 @@ challengesRouter.get('/', async (req, res) => {
 });
 
 challengesRouter.get('/code/:code', async (req, res) => {
-  const c = await Challenge.findOne({ inviteCode: String(req.params.code).toUpperCase() }).lean<ChallengeDoc>();
-  if (!c) throw new HttpError(404, 'No challenge with that code');
+  const c = await visibleTo(await Challenge.findOne({ inviteCode: String(req.params.code).toUpperCase() }).lean<ChallengeDoc>(), req.userId!, 'No challenge with that code');
   res.json((await summarise([c], req.userId!))[0]);
 });
 
-const byId = async (id: string) => {
-  if (!Types.ObjectId.isValid(id)) throw new HttpError(404, 'Challenge not found');
-  const c = await Challenge.findById(id).lean<ChallengeDoc>();
-  if (!c) throw new HttpError(404, 'Challenge not found');
+/** Cash challenges don't exist for users who can't play them (flag off, not a tester), even by invite code. */
+async function visibleTo(c: ChallengeDoc | null, userId: string, notFound: string) {
+  if (!c) throw new HttpError(404, notFound);
+  if (c.kind === 'cash') {
+    const u = await User.findById(userId, { email: 1 }).lean();
+    if (!u || !cashEnabledFor(u.email)) throw new HttpError(404, notFound);
+  }
   return c;
+}
+
+const byId = async (id: string, userId: string) => {
+  if (!Types.ObjectId.isValid(id)) throw new HttpError(404, 'Challenge not found');
+  return visibleTo(await Challenge.findById(id).lean<ChallengeDoc>(), userId, 'Challenge not found');
 };
 
 challengesRouter.get('/:id', async (req, res) => {
-  res.json((await summarise([await byId(req.params.id)], req.userId!))[0]);
+  res.json((await summarise([await byId(req.params.id, req.userId!)], req.userId!))[0]);
 });
 
 challengesRouter.get('/:id/leaderboard', async (req, res) => {
-  const c = await byId(req.params.id);
+  const c = await byId(req.params.id, req.userId!);
   res.json(await topRows(c._id));
 });
 
 challengesRouter.get('/:id/results', async (req, res) => {
-  const c = await byId(req.params.id);
+  const c = await byId(req.params.id, req.userId!);
   if (c.status !== 'settled') throw new HttpError(409, 'Results are not ready yet');
   const [summary] = await summarise([c], req.userId!);
   const top = await topRows(c._id);
@@ -237,13 +245,15 @@ adminRouter.get('/challenges/:id/flags', async (req, res) => {
 });
 
 adminRouter.get('/payouts', async (req, res) => {
-  const rows = await Payout.find({ status: String(req.query.status ?? 'claimed') as 'pending' | 'claimed' | 'fulfilled' }).sort({ updatedAt: 1 }).limit(200).lean();
+  const status = String(req.query.status ?? 'claimed');
+  // "To pay" includes prizes whose Paystack transfer is still in flight.
+  const rows = await Payout.find({ status: { $in: status === 'claimed' ? ['claimed', 'sending'] : [status] } as never }).sort({ updatedAt: 1 }).limit(200).lean();
   const [users, challenges] = await Promise.all([
     User.find({ _id: { $in: rows.map((r) => r.userId) } }, { name: 1, email: 1 }).lean(),
-    Challenge.find({ _id: { $in: rows.map((r) => r.challengeId) } }, { name: 1 }).lean(),
+    Challenge.find({ _id: { $in: rows.map((r) => r.challengeId) } }, { name: 1, sponsorOrderId: 1 }).lean(),
   ]);
   const u = new Map(users.map((x) => [String(x._id), x]));
-  const c = new Map(challenges.map((x) => [String(x._id), x.name]));
+  const c = new Map(challenges.map((x) => [String(x._id), x]));
   res.json(
     rows.map((r) => ({
       id: String(r._id),
@@ -251,12 +261,21 @@ adminRouter.get('/payouts', async (req, res) => {
       amount: r.amount,
       status: r.status,
       user: { name: u.get(String(r.userId))?.name ?? '', email: u.get(String(r.userId))?.email ?? '' },
-      challengeName: c.get(String(r.challengeId)) ?? '',
+      challengeName: c.get(String(r.challengeId))?.name ?? '',
       claim: r.claim?.momoNumber ? r.claim : undefined,
+      /** The sponsor paid online, so the prize can go out through Paystack. */
+      funded: !!c.get(String(r.challengeId))?.sponsorOrderId,
+      lastError: r.lastError ?? undefined,
     })),
   );
 });
 
+/** Sends a funded prize through Paystack. The transfer webhook marks it fulfilled. */
+adminRouter.post('/payouts/:id/send', async (req, res) => {
+  res.json({ reference: await sendPrize(req.params.id) });
+});
+
+/** Marks a prize paid by hand (sponsors who paid offline). */
 adminRouter.post('/payouts/:id/fulfill', async (req, res) => {
   const p = await Payout.findOneAndUpdate({ _id: req.params.id, status: 'claimed' }, { $set: { status: 'fulfilled' } }, { returnDocument: 'after' });
   if (!p) throw new HttpError(404, 'No claimed payout with that id');

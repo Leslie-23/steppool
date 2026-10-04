@@ -195,7 +195,8 @@ walletRouter.get('/', async (req, res) => {
         kind: p.kind as PayoutView['kind'],
         amount: p.amount ?? undefined,
         prizeDescription: p.prizeDescription ?? undefined,
-        status: p.status as PayoutView['status'],
+        // An in-flight Paystack transfer still reads as "processing" to the winner.
+        status: (p.status === 'sending' ? 'claimed' : p.status) as PayoutView['status'],
       }),
     ),
   });

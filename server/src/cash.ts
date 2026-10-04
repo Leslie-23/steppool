@@ -14,6 +14,7 @@ import { cash, inTransaction, transfer } from './ledger.js';
 import { Challenge, Ledger, Payment, User, Withdrawal, type UserDoc } from './models.js';
 import { createMomoRecipient, initializeTransaction, initiateTransfer, validSignature, verifyTransaction, type PaystackTransaction } from './paystack.js';
 import { notify } from './push.js';
+import { confirmSponsorOrder, isPrizeReference, isSponsorReference, prizeFailed, prizeSent } from './sponsor.js';
 
 const newReference = (prefix: string) => `${prefix}_${randomUUID().replace(/-/g, '')}`;
 
@@ -178,9 +179,13 @@ paystackWebhook.post('/paystack/webhook', express.raw({ type: '*/*' }), async (r
   }
   const { event, data } = JSON.parse((req.body as Buffer).toString('utf8')) as { event: string; data: PaystackTransaction & { reason?: string } };
   try {
-    if (event === 'charge.success') await confirmPayment(data.reference, data);
-    else if (event === 'transfer.success') await Withdrawal.updateOne({ reference: data.reference, status: 'pending' }, { $set: { status: 'success' } });
-    else if (event === 'transfer.failed' || event === 'transfer.reversed') await failWithdrawal(data.reference, 'The mobile money transfer did not go through.');
+    const ref = data.reference ?? '';
+    const failed = event === 'transfer.failed' || event === 'transfer.reversed';
+    if (event === 'charge.success') await (isSponsorReference(ref) ? confirmSponsorOrder(ref, data) : confirmPayment(ref, data));
+    else if (isPrizeReference(ref) && event === 'transfer.success') await prizeSent(ref);
+    else if (isPrizeReference(ref) && failed) await prizeFailed(ref, data.reason ?? 'The mobile money transfer did not go through.');
+    else if (event === 'transfer.success') await Withdrawal.updateOne({ reference: ref, status: 'pending' }, { $set: { status: 'success' } });
+    else if (failed) await failWithdrawal(ref, 'The mobile money transfer did not go through.');
   } catch (e) {
     // Unknown references (e.g. payments made outside StepPool) are acknowledged so Paystack stops retrying.
     if ((e as { status?: number }).status !== 404) throw e;

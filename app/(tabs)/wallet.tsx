@@ -29,6 +29,11 @@ const LABEL: Record<LedgerLine['kind'], string> = {
   rake: 'StepPool fee',
   withdrawal: 'Withdrawal',
   withdrawal_reversal: 'Withdrawal returned',
+  // Sponsor-money kinds never touch a player's credit wallet; listed so the map stays complete.
+  sponsor_fund: 'Sponsor prize',
+  sponsor_fee: 'Sponsor fee',
+  prize_payout: 'Prize sent',
+  prize_payout_reversal: 'Prize returned',
 };
 
 export default function WalletScreen() {

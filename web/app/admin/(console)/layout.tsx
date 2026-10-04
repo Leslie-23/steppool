@@ -13,6 +13,7 @@ const NAV = [
   { href: "/admin/broadcast", label: "Broadcast" },
   { href: "/admin/challenges", label: "Challenges" },
   { href: "/admin/payouts", label: "Prize payouts" },
+  { href: "/admin/money", label: "Money" },
 ];
 
 /** Every console page sits behind an admin session; anything else bounces to sign-in. */

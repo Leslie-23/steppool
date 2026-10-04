@@ -12,6 +12,8 @@ type Payout = {
   user: { name: string; email: string };
   challengeName: string;
   claim?: { momoNumber: string; network: string; at: string };
+  funded?: boolean;
+  lastError?: string;
 };
 
 /** Sponsor prizes people have claimed: pay them on MoMo, then mark them sent. */
@@ -24,9 +26,17 @@ export default function Payouts() {
     load();
   }, [load]);
 
+  const [error, setError] = useState<string | null>(null);
   const fulfil = async (p: Payout) => {
     if (!confirm(`Mark GH₵${p.amount} to ${p.claim?.momoNumber} (${p.claim?.network.toUpperCase()}) as sent?`)) return;
     await api(`/admin/payouts/${p.id}/fulfill`, { method: "POST" });
+    load();
+  };
+  // Prizes a sponsor paid for online go out through Paystack; the transfer webhook marks them sent.
+  const send = async (p: Payout) => {
+    if (!confirm(`Send GH₵${p.amount} to ${p.claim?.momoNumber} (${p.claim?.network.toUpperCase()}) through Paystack now?`)) return;
+    setError(null);
+    await api(`/admin/payouts/${p.id}/send`, { method: "POST" }).catch((e) => setError(e.message));
     load();
   };
 
@@ -43,6 +53,7 @@ export default function Payouts() {
           </button>
         ))}
       </div>
+      {error ? <p className="text-sm" style={{ color: "var(--danger)" }}>{error}</p> : null}
       <div className="card overflow-x-auto">
         <table className="w-full text-sm">
           <tbody>
@@ -51,10 +62,19 @@ export default function Payouts() {
                 <td className="px-4 py-3">
                   <div>{p.user.name || p.user.email}</div>
                   <div className="text-xs text-muted">{p.challengeName}</div>
+                  {p.lastError ? <div className="text-xs" style={{ color: "var(--danger)" }}>Last attempt failed: {p.lastError}</div> : null}
                 </td>
                 <td className="px-4 py-3 num text-gold">GH₵{fmt(p.amount ?? 0)}</td>
                 <td className="px-4 py-3 text-muted">{p.claim ? `${p.claim.network.toUpperCase()} ${p.claim.momoNumber} · ${ago(p.claim.at)}` : "—"}</td>
-                <td className="px-4 py-3 text-right">{tab === "claimed" ? <button className="btn btn-gold" onClick={() => fulfil(p)}>Mark sent</button> : null}</td>
+                <td className="px-4 py-3 text-right">
+                  {tab !== "claimed" ? null : p.status === "sending" ? (
+                    <span className="text-muted">Sending…</span>
+                  ) : p.funded ? (
+                    <button className="btn btn-gold" onClick={() => send(p)}>Send via Paystack</button>
+                  ) : (
+                    <button className="btn btn-gold" onClick={() => fulfil(p)}>Mark sent</button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

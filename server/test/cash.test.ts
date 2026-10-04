@@ -14,7 +14,7 @@ const SECRET = vi.hoisted(() => {
 });
 
 const { buildApp } = await import('../src/app.js');
-const { Challenge, connectDb, HourBucket, Ledger, Payment, User, Withdrawal } = await import('../src/models.js');
+const { Challenge, connectDb, HourBucket, Ledger, Payment, Payout, SponsorOrder, User, Withdrawal } = await import('../src/models.js');
 const { redis } = await import('../src/redis.js');
 const { startChallenge } = await import('../src/lifecycle.js');
 const { settleChallenge } = await import('../src/settle.js');
@@ -72,6 +72,7 @@ beforeAll(async () => {
       transfers.push(body);
       return ok({ transfer_code: 'TRF_test', status: 'pending' });
     }
+    if (u.endsWith('/balance')) return ok([{ currency: 'GHS', balance: 0 }]);
     return new Response(JSON.stringify({ status: false, message: 'not mocked' }), { status: 404 });
   });
   repl = await MongoMemoryReplSet.create({
@@ -186,5 +187,84 @@ describe('cash challenges', () => {
     const { body: join } = await request(app).post(`/cash/challenges/${c.id}/join`).set(ama.auth).expect(200);
     expect(join.joined).toMatchObject({ players: 1, poolCredits: 1000 });
     expect((await request(app).get('/me').set(ama.auth)).body.cashPesewas).toBe(11000);
+  });
+});
+
+const ADMIN = { 'x-admin-key': 'dev-admin' };
+
+describe('cash challenge visibility', () => {
+  it('a non-tester cannot see a cash challenge even with its code', async () => {
+    const outsider = await signUp('peek@cash.test', 'Peek');
+    const c = await Challenge.findOne({ kind: 'cash' });
+    await request(app).get(`/challenges/code/${c!.inviteCode}`).set(outsider.auth).expect(404);
+    await request(app).get(`/challenges/${c!._id}`).set(outsider.auth).expect(404);
+  });
+});
+
+describe('sponsors', () => {
+  it('pay online, get a live public challenge, and winners are paid through Paystack', async () => {
+    const { body: quote } = await request(app).get('/sponsor/quote?prize=1000').expect(200);
+    expect(quote).toMatchObject({ prize: 100000, fee: 15000, total: 115000, feePct: 15 });
+
+    const { body: order } = await request(app)
+      .post('/sponsor/checkout')
+      .send({ company: 'Kasapreko', email: 'brand@kasa.test', challengeName: 'Kasa Week', prizeDescription: 'GH₵1,000 shared', prizeValueGhs: 1000, maxWinners: 2, durationHours: 48 })
+      .expect(201);
+    expect(order).toMatchObject({ total: 115000 });
+    expect((await request(app).get(`/sponsor/orders/${order.reference}`).expect(200)).body).toMatchObject({ status: 'pending', challenge: null });
+
+    await webhook('charge.success', { reference: order.reference, status: 'success', amount: 115000, currency: 'GHS' }).expect(200);
+    await webhook('charge.success', { reference: order.reference, status: 'success', amount: 115000, currency: 'GHS' }).expect(200);
+    const { body: done } = await request(app).get(`/sponsor/orders/${order.reference}`).expect(200);
+    expect(done.status).toBe('paid');
+    expect(done.challenge.inviteCode).toHaveLength(6);
+    expect(await Challenge.countDocuments({ kind: 'sponsored', name: 'Kasa Week' })).toBe(1);
+
+    // A walker joins, hits the goal, claims, and the admin sends the prize.
+    const w = await signUp('kasa-walker@cash.test', 'Abena');
+    const c = (await SponsorOrder.findOne({ reference: order.reference }))!.challengeId!;
+    await request(app).post(`/challenges/${c}/join`).set(w.auth).expect(200);
+    const startsAt = Math.floor(Date.now() / HOUR_MS) * HOUR_MS - 6 * HOUR_MS;
+    const endsAt = startsAt + 48 * HOUR_MS;
+    await Challenge.updateOne({ _id: c }, { $set: { startsAt: new Date(startsAt), endsAt: new Date(endsAt), syncCutoffAt: new Date(endsAt + 2 * HOUR_MS) } });
+    await startChallenge(String(c));
+    await HourBucket.create({ userId: w.id, hour: new Date(startsAt + HOUR_MS), counted: 500_000 });
+    await settleChallenge(String(c), new Date(endsAt + 3 * HOUR_MS));
+    const payout = (await Payout.findOne({ challengeId: c, userId: w.id }))!;
+    expect(payout.amount).toBe(1000);
+    await request(app).post(`/payouts/${payout._id}/claim`).set(w.auth).send({ momoNumber: '+233201234567', network: 'telecel' }).expect(200);
+
+    const { body: list } = await request(app).get('/admin/payouts?status=claimed').set(ADMIN).expect(200);
+    expect(list.find((p: { id: string }) => p.id === String(payout._id))).toMatchObject({ funded: true });
+    transfers.length = 0;
+    const { body: sent } = await request(app).post(`/admin/payouts/${payout._id}/send`).set(ADMIN).expect(200);
+    expect(transfers[0]).toMatchObject({ amount: 100000, recipient: 'RCP_test' });
+    expect((await Payout.findById(payout._id))!.status).toBe('sending');
+    await request(app).post(`/admin/payouts/${payout._id}/send`).set(ADMIN).expect(404); // not twice
+    await webhook('transfer.success', { reference: sent.reference }).expect(200);
+    expect((await Payout.findById(payout._id))!.status).toBe('fulfilled');
+
+    // The money page adds up: everything that came in is either held or earned.
+    const { body: money } = await request(app).get('/admin/money').set(ADMIN).expect(200);
+    expect(money.earnings).toMatchObject({ rake: 2000, sponsorFees: 15000 });
+    expect(money.held.prizes).toBe(0);
+    expect(money.expectedAtPaystack).toBe(money.held.total + money.earnings.total);
+    expect(money.sponsorOrders[0]).toMatchObject({ company: 'Kasapreko', status: 'paid', prize: 100000, fee: 15000 });
+  });
+
+  it('a failed prize transfer goes back to "to pay" with the money held again', async () => {
+    const c = await Challenge.findOne({ name: 'Kasa Week' });
+    const p = await Payout.findOne({ challengeId: c!._id });
+    await Payout.updateOne({ _id: p!._id }, { $set: { status: 'claimed' } });
+    await Ledger.create([
+      { txId: 'reset', account: 'cash:paystack', amount: -100000, currency: 'GHS', kind: 'prize_payout_reversal' },
+      { txId: 'reset', account: 'cash:prizes', amount: 100000, currency: 'GHS', kind: 'prize_payout_reversal' },
+    ]);
+    const { body: sent } = await request(app).post(`/admin/payouts/${p!._id}/send`).set(ADMIN).expect(200);
+    await webhook('transfer.failed', { reference: sent.reference, reason: 'Invalid account' }).expect(200);
+    const after = (await Payout.findById(p!._id))!;
+    expect(after).toMatchObject({ status: 'claimed', lastError: 'Invalid account' });
+    const { body: money } = await request(app).get('/admin/money').set(ADMIN).expect(200);
+    expect(money.held.prizes).toBe(100000);
   });
 });

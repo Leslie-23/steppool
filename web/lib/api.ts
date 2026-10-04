@@ -56,3 +56,20 @@ export const ago = (iso: string | Date) => {
   if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
   return `${Math.floor(s / 86400)}d ago`;
 };
+
+/** Pesewas → "GH₵1,234.50". */
+export const ghs = (pesewas: number) => `GH₵${(pesewas / 100).toLocaleString("en-GB", { minimumFractionDigits: pesewas % 100 ? 2 : 0, maximumFractionDigits: 2 })}`;
+
+/** Unauthenticated calls (the public sponsor checkout). */
+export async function publicApi<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
+  const res = await fetch(`${API_URL}${path}`, {
+    method: init.method ?? "GET",
+    headers: { "content-type": "application/json" },
+    body: init.body === undefined ? undefined : JSON.stringify(init.body),
+  });
+  if (!res.ok) {
+    const msg = await res.json().then((j: { error?: string }) => j.error).catch(() => undefined);
+    throw new ApiError(res.status, msg ?? `Request failed (${res.status})`);
+  }
+  return (await res.json()) as T;
+}

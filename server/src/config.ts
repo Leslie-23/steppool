@@ -44,6 +44,10 @@ export const config = {
   paidEntryTesters: (env.PAID_ENTRY_TESTERS ?? '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean),
   /** Paystack secret key (sk_test_… or sk_live_…). Also verifies webhook signatures. */
   paystackSecret: env.PAYSTACK_SECRET_KEY || undefined,
+  /** The marketing site, where sponsors pay and land afterwards. */
+  webUrl: env.WEB_URL ?? 'https://steppool-web.onrender.com',
+  /** StepPool's fee on top of a sponsor's prize, in percent. */
+  sponsorFeePct: Number(env.SPONSOR_FEE_PCT ?? 15),
 };
 
 /** Real-money challenges: everyone once the flag is on, testers before that. */

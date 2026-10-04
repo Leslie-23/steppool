@@ -42,3 +42,12 @@ export function splitCash(entry: number, players: number, winners: number): Cash
   const per = Math.floor(bonus / winners);
   return { winnerGets: entry + per, loserGets: entry - forfeitEach, rake, remainder: bonus - per * winners };
 }
+
+/** Sponsors pay the prize plus StepPool's fee up front; the prize is held until winners claim it. */
+export const SPONSOR = { feePct: 15, minPrizeGhs: 50, maxPrizeGhs: 100_000 } as const;
+
+export const sponsorTotal = (prizeGhs: number, feePct: number = SPONSOR.feePct) => {
+  const prize = Math.round(prizeGhs * 100);
+  const fee = Math.round((prize * feePct) / 100);
+  return { prize, fee, total: prize + fee };
+};

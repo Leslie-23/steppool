@@ -7,8 +7,10 @@ import { DAY_MS } from '../../shared/contracts.js';
 
 import { requireAdmin } from './auth.js';
 import { HttpError } from './errors.js';
-import { account, inTransaction, transfer } from './ledger.js';
-import { Challenge, HourBucket, Ledger, Notification, Participant, Payout, User } from './models.js';
+import { config } from './config.js';
+import { account, cash, inTransaction, transfer } from './ledger.js';
+import { Challenge, HourBucket, Ledger, Notification, Participant, Payment, Payout, SponsorOrder, User, Withdrawal } from './models.js';
+import { paystack } from './paystack.js';
 import { toMe } from './views.js';
 
 /** The web console's API. Every route requires an admin (role or API key). */
@@ -186,15 +188,84 @@ consoleRouter.post('/users/:id/test-push', async (req, res) => {
   res.json({ ok: true, step: 'delivered', detail: `Delivered to Apple/Google for ${u.pushToken.slice(0, 30)}…` });
 });
 
+/**
+ * Real money, in pesewas. Every cedi StepPool has taken in sits in exactly one bucket: players' wallets,
+ * live challenge pools, held sponsor prizes, or StepPool's own earnings. Together they should equal what
+ * Paystack is holding for us (minus anything StepPool has already settled out of its earnings).
+ */
+consoleRouter.get('/money', async (_req, res) => {
+  const sumBy = (match: object) => Ledger.aggregate<{ _id: string; total: number }>([{ $match: match }, { $group: { _id: '$kind', total: { $sum: '$amount' } } }]);
+  const today = dayStart(Date.now());
+  const from30 = new Date(today - 29 * DAY_MS);
+  const [house, wallets, pools, prizes, atPaystack, deposits, withdrawals, pendingW, orders, prizeLiability, daily] = await Promise.all([
+    sumBy({ account: cash.house }),
+    User.aggregate<{ total: number; n: number }>([{ $match: { cashPesewas: { $gt: 0 } } }, { $group: { _id: null, total: { $sum: '$cashPesewas' }, n: { $sum: 1 } } }]),
+    Ledger.aggregate<{ total: number }>([{ $match: { account: { $regex: '^cash:pool:' } } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
+    Ledger.aggregate<{ total: number }>([{ $match: { account: cash.prizes } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
+    Ledger.aggregate<{ total: number }>([{ $match: { account: cash.paystack } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
+    Payment.aggregate<{ total: number; n: number }>([{ $match: { status: 'success' } }, { $group: { _id: null, total: { $sum: '$amount' }, n: { $sum: 1 } } }]),
+    Withdrawal.aggregate<{ _id: string; total: number; n: number }>([{ $group: { _id: '$status', total: { $sum: '$amount' }, n: { $sum: 1 } } }]),
+    Withdrawal.find({ status: 'pending' }).sort({ createdAt: 1 }).limit(20).lean(),
+    SponsorOrder.find({}).sort({ createdAt: -1 }).limit(30).lean(),
+    Payout.aggregate<{ total: number }>([{ $match: { kind: 'sponsor_prize', status: { $in: ['pending', 'claimed', 'sending'] } } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
+    Ledger.aggregate<{ _id: string; total: number }>([
+      { $match: { account: cash.house, createdAt: { $gte: from30 } } },
+      { $group: { _id: { $dateToString: { date: '$createdAt', format: '%Y-%m-%d' } }, total: { $sum: '$amount' } } },
+    ]),
+  ]);
+  const by = (rows: { _id: string; total: number }[], k: string) => rows.find((r) => r._id === k)?.total ?? 0;
+  const earnings = { rake: by(house, 'rake'), sponsorFees: by(house, 'sponsor_fee'), rounding: by(house, 'house_remainder') };
+  const held = { wallets: wallets[0]?.total ?? 0, walletsUsers: wallets[0]?.n ?? 0, pools: pools[0]?.total ?? 0, prizes: prizes[0]?.total ?? 0 };
+  let paystackBalance: number | null = null;
+  if (config.paystackSecret) {
+    const bal = await paystack<{ currency: string; balance: number }[]>('/balance').catch(() => null);
+    paystackBalance = bal?.find((b) => b.currency === 'GHS')?.balance ?? null;
+  }
+  const users = await User.find({ _id: { $in: pendingW.map((w) => w.userId) } }, { name: 1, email: 1 }).lean();
+  const uname = new Map(users.map((u) => [String(u._id), u.name || u.email]));
+  res.json({
+    enabled: { paidEntry: config.paidEntryEnabled, testers: config.paidEntryTesters.length, paystack: !!config.paystackSecret, sponsorFeePct: config.sponsorFeePct },
+    earnings: { ...earnings, total: earnings.rake + earnings.sponsorFees + earnings.rounding },
+    held: { ...held, total: held.wallets + held.pools + held.prizes },
+    // cash:paystack goes negative as money comes in; its negation is what should be sitting at Paystack.
+    expectedAtPaystack: -(atPaystack[0]?.total ?? 0),
+    paystackBalance,
+    deposits: { total: deposits[0]?.total ?? 0, n: deposits[0]?.n ?? 0 },
+    withdrawals: {
+      sent: by(withdrawals, 'success'),
+      sentN: withdrawals.find((w) => w._id === 'success')?.n ?? 0,
+      pending: by(withdrawals, 'pending'),
+      failedN: withdrawals.find((w) => w._id === 'failed')?.n ?? 0,
+      pendingList: pendingW.map((w) => ({ id: String(w._id), name: uname.get(String(w.userId)) ?? '', amount: w.amount, network: w.network, momoNumber: w.momoNumber, at: w.createdAt })),
+    },
+    sponsorPrizesOwed: Math.round((prizeLiability[0]?.total ?? 0) * 100),
+    sponsorOrders: orders.map((o) => ({
+      id: String(o._id),
+      company: o.company,
+      email: o.email,
+      challengeName: o.challengeName,
+      prize: o.prizePesewas,
+      fee: o.feePesewas,
+      status: o.status,
+      challengeId: o.challengeId ? String(o.challengeId) : null,
+      at: o.createdAt,
+    })),
+    earningsDaily: Array.from({ length: 30 }, (_, i) => {
+      const day = iso(from30.getTime() + i * DAY_MS);
+      return { day, n: daily.find((r) => r._id === day)?.total ?? 0 };
+    }),
+  });
+});
+
 consoleRouter.get('/challenges', async (_req, res) => {
   const rows = await Challenge.find({}).sort({ createdAt: -1 }).limit(100).lean();
   const pools = new Map(
     (
       await Ledger.aggregate<{ _id: string; total: number }>([
-        { $match: { account: { $in: rows.map((c) => account.pool(c._id)) } } },
+        { $match: { account: { $in: rows.map((c) => (c.kind === 'cash' ? cash.pool(c._id) : account.pool(c._id))) } } },
         { $group: { _id: '$account', total: { $sum: '$amount' } } },
       ])
-    ).map((p) => [p._id.slice(5), p.total]),
+    ).map((p) => [p._id.slice(p._id.lastIndexOf(':') + 1), p.total]),
   );
   res.json(
     rows.map((c) => ({
@@ -207,7 +278,10 @@ consoleRouter.get('/challenges', async (_req, res) => {
       players: c.players ?? 0,
       finishers: c.finishers ?? null,
       entryCredits: c.entryCredits ?? 0,
-      pool: pools.get(String(c._id)) ?? 0,
+      /** Cash challenges: entry and pool are in pesewas. */
+      entryPesewas: c.entryPesewas ?? 0,
+      pool: c.kind === 'cash' && c.status === 'settled' ? (c.players ?? 0) * (c.entryPesewas ?? 0) : (pools.get(String(c._id)) ?? 0),
+      paidOnline: !!c.sponsorOrderId,
       sponsor: c.sponsor?.name ?? null,
       startsAt: c.startsAt,
       endsAt: c.endsAt,

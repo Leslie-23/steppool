@@ -57,6 +57,21 @@ export const SponsorChallengeBody = CreateChallengeBody.extend({
 });
 export type SponsorChallengeBody = z.infer<typeof SponsorChallengeBody>;
 
+/** A brand paying for a sponsored challenge from the website. */
+export const SponsorCheckoutBody = z.object({
+  company: z.string().trim().min(2).max(60),
+  email: z.string().trim().email(),
+  phone: z.string().trim().max(20).optional(),
+  logoUrl: z.string().url().optional(),
+  challengeName: z.string().trim().min(3).max(48),
+  prizeDescription: z.string().trim().min(3).max(120),
+  prizeValueGhs: z.number().int().min(50).max(100_000),
+  maxWinners: z.number().int().positive().max(10_000).optional(),
+  durationHours: z.union([z.literal(48), z.literal(168), z.literal(720)]),
+  startsAt: z.string().datetime().optional(),
+});
+export type SponsorCheckoutBody = z.infer<typeof SponsorCheckoutBody>;
+
 export type ChallengeStatus = 'upcoming' | 'live' | 'settling' | 'settled';
 
 export interface Sponsor {
@@ -206,7 +221,11 @@ export type LedgerKind =
   | 'deposit'
   | 'rake'
   | 'withdrawal'
-  | 'withdrawal_reversal';
+  | 'withdrawal_reversal'
+  | 'sponsor_fund'
+  | 'sponsor_fee'
+  | 'prize_payout'
+  | 'prize_payout_reversal';
 
 export interface LedgerLine {
   id: string;

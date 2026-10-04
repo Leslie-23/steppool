@@ -22,6 +22,8 @@ export const cash = {
   house: 'cash:house',
   /** Money held at Paystack: deposits come from here, withdrawals go back to it. */
   paystack: 'cash:paystack',
+  /** Sponsor prize money, held until winners claim it. */
+  prizes: 'cash:prizes',
 };
 
 export class InsufficientCredits extends Error {

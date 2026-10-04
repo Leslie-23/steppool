@@ -8,6 +8,7 @@ import { authRouter } from './auth.js';
 import { cashRouter, paystackWebhook } from './cash.js';
 import { adminRouter, challengesRouter } from './challenges.js';
 import { errorHandler } from './errors.js';
+import { sponsorRouter } from './sponsor.js';
 import { meRouter, notificationsRouter, payoutsRouter, stepsRouter, walletRouter } from './routes.js';
 import { webRouter } from './web.js';
 
@@ -29,6 +30,7 @@ export function buildApp() {
   app.use('/challenges', challengesRouter);
   app.use('/wallet', walletRouter);
   app.use('/cash', cashRouter);
+  app.use('/sponsor', sponsorRouter);
   app.use('/notifications', notificationsRouter);
   app.use('/payouts', payoutsRouter);
   app.use('/admin', adminRouter);

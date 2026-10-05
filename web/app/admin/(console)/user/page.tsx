@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useState } from "react";
 
 import { ago, api, fmt } from "@/lib/api";
 
@@ -24,8 +24,17 @@ const KIND: Record<string, string> = {
   admin_grant: "Admin grant",
 };
 
-export default function UserDetail() {
-  const { id } = useParams<{ id: string }>();
+/** The console is a static export, so the user comes from `?id=` rather than a dynamic route segment. */
+export default function Page() {
+  return (
+    <Suspense fallback={<p className="text-muted text-sm">Loading…</p>}>
+      <UserDetail />
+    </Suspense>
+  );
+}
+
+function UserDetail() {
+  const id = useSearchParams().get("id") ?? "";
   const [d, setD] = useState<Detail | null>(null);
   const [grant, setGrant] = useState({ amount: 100, reason: "" });
   const [msg, setMsg] = useState<string | null>(null);

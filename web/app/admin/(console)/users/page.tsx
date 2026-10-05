@@ -67,7 +67,7 @@ export default function Users() {
               {data?.users.map((u) => (
                 <tr key={u.id} className="border-t border-hairline hover:bg-raised/60">
                   <td className="px-4 py-3">
-                    <Link href={`/admin/users/${u.id}`} className="block">
+                    <Link href={`/admin/user?id=${u.id}`} className="block">
                       <div className="text-ink">{u.name || "—"} {u.role === "admin" ? <span className="text-xs text-volt ml-1">admin</span> : null}</div>
                       <div className="text-muted text-xs">{u.email}</div>
                     </Link>

@@ -60,20 +60,18 @@ services:
           property: connectionString
 
   # Web: marketing site + admin console (Next.js). Talks to the API from the browser.
+  # Static export (web/next.config.ts): never sleeps and uses none of the free plan's 750 instance hours.
   - type: web
     name: steppool-web
-    runtime: node
+    runtime: static
     rootDir: web
-    plan: free
-    region: frankfurt
     buildCommand: npm ci && npm run build
-    startCommand: npm start
+    staticPublishPath: out
     envVars:
       - key: NODE_VERSION
         value: "22"
       - key: NEXT_PUBLIC_API_URL
         value: https://steppool-api.onrender.com
-
   - type: keyvalue
     name: steppool-redis
     plan: free

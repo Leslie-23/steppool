@@ -10,7 +10,7 @@ const FAQ: [string, string][] = [
   ["How are goals set?", "Your goal comes from your own usual daily steps, scaled by the challenge's difficulty, so every fitness level has a real chance."],
   ["What are credits?", "Free in-app points you earn by walking. They can't be bought or cashed out. You use them to enter credit challenges."],
   ["How do I claim a sponsored prize?", "When a sponsored challenge ends and you've hit your goal, open the result or your Wallet and tap Claim. Prizes go out within 5 working days."],
-  ["How do I delete my account?", "Email us from the address you signed up with and we'll delete your account and data within 30 days."],
+  ["How do I delete my account?", "In the app, go to Profile → Delete account and hold the button to confirm. Your account and personal data are deleted straight away. If you can't open the app, email us from the address you signed up with and we'll do it for you."],
 ];
 
 export default function Support() {

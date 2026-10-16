@@ -89,6 +89,9 @@ export default function ProfileScreen() {
           tone="ghost"
           onPress={() => Alert.alert('Sign out?', undefined, [{ text: 'Cancel', style: 'cancel' }, { text: 'Sign out', style: 'destructive', onPress: signOut }])}
         />
+        <Press onPress={() => router.push('/settings/delete-account')} accessibilityRole="button" style={{ alignSelf: 'center', padding: space.sm }}>
+          <T v="caption" style={{ color: color.danger }}>Delete account</T>
+        </Press>
       </ScrollView>
     </Screen>
   );

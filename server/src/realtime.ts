@@ -28,6 +28,10 @@ export async function setScore(challengeId: string, userId: string, steps: numbe
 }
 
 /** 1-based competition rank from the sorted set: everyone with strictly more steps, plus one. */
+export async function removeScore(challengeId: string, userId: string) {
+  await redis().zrem(lbKey(challengeId), userId);
+}
+
 export async function rankOf(challengeId: string, steps: number) {
   return (await redis().zcount(lbKey(challengeId), `(${steps}`, '+inf')) + 1;
 }

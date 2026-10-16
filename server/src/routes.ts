@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { DAY_MS, IngestBody, type Analytics, type InboxItem, type LedgerLine, type NotificationKind, type Payout as PayoutView } from '../../shared/contracts.js';
 import { CREDITS, MAX_CUSTOM_DAILY, MIN_CUSTOM_DAILY } from '../../shared/goals.js';
 
+import { deleteAccount } from './account.js';
 import { limit, requireUser } from './auth.js';
 import { HttpError } from './errors.js';
 import { account } from './ledger.js';
@@ -25,6 +26,12 @@ meRouter.get('/', async (req, res) => {
 });
 
 /** Enter a friend's referral code (once, within 7 days of joining): +100 credits each. */
+/** Deletes the signed-in account and its personal data. The app signs out afterwards. */
+meRouter.delete('/', async (req, res) => {
+  await deleteAccount(req.userId!);
+  res.status(204).end();
+});
+
 meRouter.post('/referral', async (req, res) => {
   const { code } = z.object({ code: z.string().trim().toUpperCase().length(6) }).parse(req.body);
   const me = await User.findById(req.userId);

@@ -76,6 +76,7 @@ export const api = {
   updatePrefs: (notifPrefs: Partial<NotificationPrefs>) => request<Me>('PATCH', '/me', { notifPrefs }),
   me: () => request<Me>('GET', '/me'),
   updateMe: (patch: { name?: string; avatar?: string; pushToken?: string; dailyTarget?: number | null }) => request<Me>('PATCH', '/me', patch),
+  deleteAccount: () => request<void>('DELETE', '/me'),
   redeemReferral: (code: string) => request<Me>('POST', '/me/referral', { code }),
   ingest: (body: IngestBody) => request<{ accepted: number; todaySteps: number }>('POST', '/steps/ingest', body),
   analytics: () => request<Analytics>('GET', '/steps/analytics'),

@@ -35,7 +35,7 @@ export default function Privacy() {
       <p>We use hosting and infrastructure providers to run StepPool, including Render (servers), MongoDB Atlas (database), Resend (email) and Expo (push notifications). They process data only on our behalf.</p>
 
       <H>Retention and deletion</H>
-      <p>We keep your data while your account is active. Notifications are deleted after 60 days. To delete your account and data, email us from the address you signed up with and we&apos;ll delete it within 30 days. You can stop step sharing at any time in Apple Health or Health Connect settings.</p>
+      <p>We keep your data while your account is active. Notifications are deleted after 60 days. You can delete your account at any time in the app (Profile → Delete account); your profile, step data, notifications and unclaimed prizes are deleted immediately. Records of payments and the anonymous bookkeeping behind challenge pools are kept as required for accounting. If you can&apos;t use the app, email us from the address you signed up with and we&apos;ll delete it within 30 days. You can stop step sharing at any time in Apple Health or Health Connect settings.</p>
 
       <H>Children</H>
       <p>StepPool is not intended for children under 13.</p>

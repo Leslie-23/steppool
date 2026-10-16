@@ -15,11 +15,11 @@ export function HoldButton({ label, holdingLabel = 'Keep holding', onConfirm, to
   label: string;
   holdingLabel?: string;
   onConfirm: () => void;
-  tone?: 'volt' | 'gold';
+  tone?: 'volt' | 'gold' | 'danger';
   duration?: number;
   disabled?: boolean;
 }) {
-  const accent = tone === 'gold' ? color.gold : color.volt;
+  const accent = tone === 'gold' ? color.gold : tone === 'danger' ? color.danger : color.volt;
   const fill = useSharedValue(0);
   const scale = useSharedValue(1);
   const fired = useRef(false);

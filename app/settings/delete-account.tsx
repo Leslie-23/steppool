@@ -74,7 +74,7 @@ export default function DeleteAccount() {
         ) : null}
 
         <View style={{ gap: space.md }}>
-          <HoldButton label={busy ? 'Deleting…' : 'Hold to delete my account'} holdingLabel="Keep holding to delete" onConfirm={remove} disabled={busy} duration={1500} />
+          <HoldButton label={busy ? 'Deleting…' : 'Hold to delete my account'} holdingLabel="Keep holding to delete" onConfirm={remove} disabled={busy} duration={1500} tone="danger" />
           <T v="caption" style={{ textAlign: 'center' }} onPress={() => router.back()}>
             Keep my account
           </T>

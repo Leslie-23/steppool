@@ -76,12 +76,17 @@ export default function Sponsor() {
   const [error, setError] = useState<string | null>(null);
   // The fee is set on the server; show whatever it currently is.
   const [feePct, setFeePct] = useState(15);
+  // Captured in state (not read during render) so validation stays pure; refreshed whenever the form changes.
+  const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     publicApi<{ feePct: number }>("/sponsor/quote?prize=0").then((q) => setFeePct(q.feePct)).catch(() => {});
   }, []);
   const bind = (k: Exclude<Fields, "logo">) => ({
     value: f[k],
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) => setF({ ...f, [k]: e.target.value }),
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+      setF({ ...f, [k]: e.target.value });
+      setNow(Date.now());
+    },
     onBlur: () => setTouched((t) => ({ ...t, [k]: true })),
   });
 
@@ -95,7 +100,7 @@ export default function Sponsor() {
   if (f.challengeName.trim().length < 3) errors.challengeName = "Give the challenge a name (at least 3 characters).";
   if (!Number.isInteger(prizeGhs) || prizeGhs < LIMITS.minPrize || prizeGhs > LIMITS.maxPrize) errors.prizeValueGhs = `Enter a whole amount from GH₵${LIMITS.minPrize} to GH₵${LIMITS.maxPrize.toLocaleString("en-GH")}.`;
   if (f.maxWinners.trim() !== "" && (!Number.isInteger(winners) || winners < 1 || winners > LIMITS.maxWinners)) errors.maxWinners = `Enter a whole number from 1 to ${LIMITS.maxWinners.toLocaleString("en-GH")}, or leave it empty.`;
-  if (f.startsAt && !(new Date(f.startsAt).getTime() > Date.now())) errors.startsAt = "Pick a start time in the future, or leave it empty.";
+  if (f.startsAt && !(new Date(f.startsAt).getTime() > now)) errors.startsAt = "Pick a start time in the future, or leave it empty.";
   const show = (k: Fields) => (submitted || touched[k] ? errors[k] : undefined);
   const valid = Object.keys(errors).length === 0 && !logoBusy;
 

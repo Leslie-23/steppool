@@ -12,7 +12,7 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.steppool.app",
       "associatedDomains": [
-        "applinks:steppool.onrender.com"
+        "applinks:steppool.mytrofficient.com"
       ],
       "infoPlist": {
         "UIBackgroundModes": [
@@ -46,7 +46,7 @@
           "data": [
             {
               "scheme": "https",
-              "host": "steppool.onrender.com",
+              "host": "steppool.mytrofficient.com",
               "pathPrefix": "/j/"
             }
           ],

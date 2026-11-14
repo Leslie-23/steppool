@@ -19,5 +19,5 @@ export function inviteCodeFromPath(path: string): string | null {
 }
 
 export function inviteUrl(code: string) {
-  return `https://steppool.onrender.com/j/${code}`;
+  return `https://steppool.mytrofficient.com/j/${code}`;
 }

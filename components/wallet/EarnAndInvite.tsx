@@ -37,7 +37,7 @@ export function EarnAndInvite({ onRedeemed }: { onRedeemed: () => void }) {
 
   const share = () => {
     haptic.commit();
-    Share.share({ message: `Walk with me on StepPool. Use my code ${me?.referralCode} when you join and we both get ${CREDITS.referral} credits. https://steppool-api.onrender.com` });
+    Share.share({ message: `Walk with me on StepPool. Use my code ${me?.referralCode} when you join and we both get ${CREDITS.referral} credits. https://steppool-web.onrender.com` });
   };
 
   const redeem = async () => {

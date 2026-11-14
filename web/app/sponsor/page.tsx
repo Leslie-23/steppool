@@ -184,7 +184,6 @@ export default function Sponsor() {
                 <input ref={fileRef} type="file" accept={LOGO_TYPES.join(",")} className="hidden" onChange={pickLogo} />
                 <div className="flex items-center gap-3">
                   {logo ? (
-                    // eslint-disable-next-line @next/next/no-img-element
                     <img src={logo.url} alt="Your logo" className="h-11 w-11 rounded-lg object-contain shrink-0" style={{ background: "var(--raised)" }} />
                   ) : null}
                   <button type="button" className="btn btn-ghost" disabled={logoBusy} onClick={() => fileRef.current?.click()}>

@@ -18,6 +18,7 @@ export function LegalPage({ title, updated, children }: { title: string; updated
           <Link href="/privacy">Privacy</Link>
           <Link href="/rules">Challenge rules</Link>
           <Link href="/support">Support</Link>
+          <Link href="/delete">Delete account</Link>
         </footer>
       </div>
     </main>

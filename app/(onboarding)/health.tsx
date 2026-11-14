@@ -55,7 +55,7 @@ export default function HealthPrimer() {
           </StepRing>
         </View>
         <View style={{ gap: space.sm }}>
-          <T v="title">Connect {source}</T>
+          <T v="title">Your steps, from {source}</T>
           <T v="caption">StepPool counts the steps your phone or watch already records.</T>
         </View>
         <View style={{ gap: space.sm }}>
@@ -80,7 +80,7 @@ export default function HealthPrimer() {
         ) : availability === 'unavailable' ? (
           <T v="caption" style={{ textAlign: 'center' }}>Step data isn't available on this device.</T>
         ) : (
-          <Button label={busy ? 'Connecting…' : `Connect ${source}`} onPress={connect} disabled={busy || !availability} />
+          <Button label="Continue" onPress={connect} disabled={busy || !availability} />
         )}
       </View>
     </Screen>

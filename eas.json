@@ -8,7 +8,7 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://steppool-api.onrender.com"
+        "EXPO_PUBLIC_API_URL": "https://steppool.mytrofficient.com"
       },
       "channel": "development"
     },
@@ -18,14 +18,14 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://steppool-api.onrender.com"
+        "EXPO_PUBLIC_API_URL": "https://steppool.mytrofficient.com"
       },
       "channel": "preview"
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://steppool-api.onrender.com"
+        "EXPO_PUBLIC_API_URL": "https://steppool.mytrofficient.com"
       },
       "channel": "production"
     }

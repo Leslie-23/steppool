@@ -80,7 +80,7 @@ export default function NotificationSettings() {
               </T>
             </View>
           </Row>
-          {status !== 'granted' ? <Button label={status === 'denied' ? 'Open Settings' : 'Turn on'} onPress={enablePush} /> : null}
+          {status !== 'granted' ? <Button label={status === 'denied' ? 'Open Settings' : 'Continue'} onPress={enablePush} /> : null}
         </Card>
 
         <View style={{ gap: space.xs }}>

@@ -1,0 +1,6 @@
+# Copy to ~/proxy/conf/sites/steppool.caddy on the server, then:
+#   docker exec caddy caddy reload --config /etc/caddy/Caddyfile
+steppool.mytrofficient.com {
+	encode gzip
+	reverse_proxy steppool-api:4000
+}

@@ -71,7 +71,7 @@ services:
       - key: NODE_VERSION
         value: "22"
       - key: NEXT_PUBLIC_API_URL
-        value: https://steppool-api.onrender.com
+        value: https://steppool.mytrofficient.com
   - type: keyvalue
     name: steppool-redis
     plan: free

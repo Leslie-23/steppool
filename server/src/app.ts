@@ -14,7 +14,7 @@ import { webRouter } from './web.js';
 
 export function buildApp() {
   const app = express();
-  app.set('trust proxy', 1); // Render terminates TLS in front of us
+  app.set('trust proxy', 1); // TLS terminates at the reverse proxy in front of us (Caddy on the Oracle VM)
   app.use(helmet({ contentSecurityPolicy: false }));
   app.use(cors());
   app.use(paystackWebhook); // needs the raw body, so before express.json

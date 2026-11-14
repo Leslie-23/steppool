@@ -60,8 +60,25 @@ export default function Home() {
           Free to play. No deposits, no betting.
         </p>
         <div className="flex flex-wrap gap-3 mt-10">
-          <span className="btn btn-volt h-12 px-6">iPhone · Live </span>
-          <span className="btn btn-ghost h-12 px-6">Android · Live </span>
+          <a
+            href="https://apps.apple.com/app/id6818976847"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-volt h-12 px-6"
+            aria-label="Download Steppool on the App Store"
+          >
+            iPhone · Live ↗
+          </a>
+
+          <a
+            href="https://play.google.com/store/apps/details?id=com.steppool.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-ghost h-12 px-6"
+            aria-label="Download Steppool on Google Play"
+          >
+            Android · Live ↗
+          </a>
         </div>
         <div className="grid md:grid-cols-3 gap-3 mt-20">
           {POINTS.map((p) => (

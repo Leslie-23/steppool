@@ -46,6 +46,16 @@ export function splitCash(entry: number, players: number, winners: number): Cash
 /** Sponsors pay the prize plus StepPool's fee up front; the prize is held until winners claim it. */
 export const SPONSOR = { feePct: 15, minPrizeGhs: 50, maxPrizeGhs: 100_000 } as const;
 
+/**
+ * The prize line walkers see. Always built from the paid amount, so it can't promise more than was funded.
+ * `extra` is an optional non-cash add-on from the sponsor, e.g. "branded merch".
+ */
+export const sponsorPrizeText = (prizeGhs: number, maxWinners?: number | null, extra?: string | null) => {
+  const amount = `GH₵${prizeGhs.toLocaleString('en-GH')}`;
+  const split = maxWinners === 1 ? `${amount} for the first finisher` : maxWinners ? `${amount} shared by the first ${maxWinners.toLocaleString('en-GH')} finishers` : `${amount} shared`;
+  return extra?.trim() ? `${split} + ${extra.trim()}` : split;
+};
+
 export const sponsorTotal = (prizeGhs: number, feePct: number = SPONSOR.feePct) => {
   const prize = Math.round(prizeGhs * 100);
   const fee = Math.round((prize * feePct) / 100);

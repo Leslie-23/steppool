@@ -59,16 +59,18 @@ export type SponsorChallengeBody = z.infer<typeof SponsorChallengeBody>;
 
 /** A brand paying for a sponsored challenge from the website. */
 export const SponsorCheckoutBody = z.object({
-  company: z.string().trim().min(2).max(60),
-  email: z.string().trim().email(),
-  phone: z.string().trim().max(20).optional(),
-  logoUrl: z.string().url().optional(),
-  challengeName: z.string().trim().min(3).max(48),
-  prizeDescription: z.string().trim().min(3).max(120),
-  prizeValueGhs: z.number().int().min(50).max(100_000),
-  maxWinners: z.number().int().positive().max(10_000).optional(),
-  durationHours: z.union([z.literal(48), z.literal(168), z.literal(720)]),
-  startsAt: z.string().datetime().optional(),
+  company: z.string().trim().min(2, 'Enter your company name').max(60, 'Company name is too long'),
+  email: z.string().trim().email('Enter a valid billing email'),
+  phone: z.string().trim().regex(/^\+?\d{7,15}$/, 'Enter a valid phone number').optional(),
+  /** Only logos uploaded through POST /sponsor/logo are accepted (checked in the route). */
+  logoUrl: z.string().url('Upload your logo as an image').optional(),
+  challengeName: z.string().trim().min(3, 'Challenge name needs at least 3 characters').max(48, 'Challenge name is too long'),
+  /** Optional non-cash add-on shown after the amount, e.g. "branded merch". The amount itself is never typed. */
+  prizeExtra: z.string().trim().max(60, 'Keep the extra prize under 60 characters').optional(),
+  prizeValueGhs: z.number('Enter the prize amount').int('Prize must be a whole number of cedis').min(50, 'Prize must be at least GH₵50').max(100_000, 'Prize can be at most GH₵100,000'),
+  maxWinners: z.number().int('Max winners must be a whole number').positive('Max winners must be at least 1').max(10_000, 'Max winners can be at most 10,000').optional(),
+  durationHours: z.union([z.literal(48), z.literal(168), z.literal(720)], 'Pick a duration'),
+  startsAt: z.string().datetime('Pick a valid start time').optional(),
 });
 export type SponsorCheckoutBody = z.infer<typeof SponsorCheckoutBody>;
 

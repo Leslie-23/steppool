@@ -1,15 +1,16 @@
 import { randomUUID } from 'node:crypto';
 
-import { Router } from 'express';
+import express, { Router } from 'express';
 
-import { sponsorTotal } from '../../shared/cash.js';
+import { sponsorPrizeText, sponsorTotal } from '../../shared/cash.js';
 import { SponsorCheckoutBody } from '../../shared/contracts.js';
 
 import { createChallenge } from './challenges.js';
+import { limit } from './auth.js';
 import { config } from './config.js';
 import { HttpError } from './errors.js';
 import { cash, inTransaction, transfer } from './ledger.js';
-import { Challenge, Payout, SponsorOrder, User } from './models.js';
+import { Challenge, Payout, SponsorLogo, SponsorOrder, User } from './models.js';
 import { createMomoRecipient, initializeTransaction, initiateTransfer, verifyTransaction, type PaystackTransaction } from './paystack.js';
 import { notify } from './push.js';
 
@@ -115,11 +116,43 @@ export async function prizeFailed(reference: string, reason: string) {
 /** Public: brands don't have StepPool accounts. */
 export const sponsorRouter = Router();
 
+const LOGO_MAX_BYTES = 300_000;
+const logoBase = () => `${config.publicUrl}/sponsor/logo/`;
+
+/** What the bytes really are, whatever the upload claimed. */
+function imageType(b: Buffer): 'image/png' | 'image/jpeg' | 'image/webp' | null {
+  if (b.length > 8 && b.readUInt32BE(0) === 0x89504e47 && b.readUInt32BE(4) === 0x0d0a1a0a) return 'image/png';
+  if (b.length > 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return 'image/jpeg';
+  if (b.length > 12 && b.toString('latin1', 0, 4) === 'RIFF' && b.toString('latin1', 8, 12) === 'WEBP') return 'image/webp';
+  return null;
+}
+
+/** The sponsor form uploads the logo (already resized in the browser) and gets back the URL to put on the order. */
+sponsorRouter.post('/logo', express.raw({ type: ['image/png', 'image/jpeg', 'image/webp'], limit: LOGO_MAX_BYTES }), async (req, res) => {
+  await limit(`logo:ip:${req.ip}`, 20, 3600);
+  const data = Buffer.isBuffer(req.body) ? req.body : null;
+  const type = data && imageType(data);
+  if (!data || !type) throw new HttpError(400, 'Upload a PNG, JPG or WebP image');
+  const logo = await SponsorLogo.create({ data, type });
+  res.status(201).json({ logoUrl: `${logoBase()}${logo._id}` });
+});
+
+sponsorRouter.get('/logo/:id', async (req, res) => {
+  const logo = /^[a-f0-9]{24}$/.test(req.params.id) ? await SponsorLogo.findById(req.params.id) : null;
+  if (!logo) throw new HttpError(404, 'No such logo');
+  res
+    .set({ 'Content-Type': logo.type, 'Cache-Control': 'public, max-age=31536000, immutable', 'Cross-Origin-Resource-Policy': 'cross-origin', 'X-Content-Type-Options': 'nosniff' })
+    .send(logo.data);
+});
+
 sponsorRouter.post('/checkout', async (req, res) => {
-  const body = SponsorCheckoutBody.parse(req.body);
+  const { prizeExtra, ...body } = SponsorCheckoutBody.parse(req.body);
+  if (body.logoUrl && !body.logoUrl.startsWith(logoBase())) throw new HttpError(400, 'Upload your logo as an image');
   const { prize, fee, total } = sponsorTotal(body.prizeValueGhs, config.sponsorFeePct);
   const reference = newReference('so');
-  await SponsorOrder.create({ ...body, startsAt: body.startsAt ? new Date(body.startsAt) : undefined, reference, prizePesewas: prize, feePesewas: fee, amount: total });
+  // Walkers see a prize line built from the amount actually being paid, never free text.
+  const prizeDescription = sponsorPrizeText(body.prizeValueGhs, body.maxWinners, prizeExtra);
+  await SponsorOrder.create({ ...body, prizeDescription, startsAt: body.startsAt ? new Date(body.startsAt) : undefined, reference, prizePesewas: prize, feePesewas: fee, amount: total });
   const { authorization_url } = await initializeTransaction({
     email: body.email,
     amount: total,

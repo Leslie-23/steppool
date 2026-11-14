@@ -266,6 +266,10 @@ export const Payment = mongoose.model('Payment', PaymentSchema);
 export const Withdrawal = mongoose.model('Withdrawal', WithdrawalSchema);
 export const SponsorOrder = mongoose.model('SponsorOrder', SponsorOrderSchema);
 
+/** A sponsor's logo, uploaded from the website before checkout. Small (resized in the browser), so it lives in the database. */
+const SponsorLogoSchema = new Schema({ data: { type: Buffer, required: true }, type: { type: String, required: true } }, { timestamps: true });
+export const SponsorLogo = mongoose.model('SponsorLogo', SponsorLogoSchema);
+
 export type UserDoc = InferSchemaType<typeof UserSchema> & { _id: Types.ObjectId };
 export type ChallengeDoc = InferSchemaType<typeof ChallengeSchema> & { _id: Types.ObjectId; createdAt: Date };
 export type ParticipantDoc = InferSchemaType<typeof ParticipantSchema> & { _id: Types.ObjectId };

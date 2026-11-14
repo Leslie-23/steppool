@@ -202,14 +202,32 @@ describe('cash challenge visibility', () => {
 });
 
 describe('sponsors', () => {
+  it('logos are uploaded as real images, and checkout only accepts an uploaded logo', async () => {
+    const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(32)]);
+    await request(app).post('/sponsor/logo').set('Content-Type', 'image/png').send(Buffer.from('<html>not an image</html>')).expect(400);
+    const { body: up } = await request(app).post('/sponsor/logo').set('Content-Type', 'image/png').send(png).expect(201);
+    const served = await request(app).get(new URL(up.logoUrl).pathname).expect(200);
+    expect(served.headers['content-type']).toBe('image/png');
+    expect(Buffer.compare(served.body, png)).toBe(0);
+
+    const base = { company: 'Logo Co', email: 'brand@logo.test', challengeName: 'Logo Week', prizeValueGhs: 100, durationHours: 48 };
+    const bad = await request(app).post('/sponsor/checkout').send({ ...base, logoUrl: 'https://example.com/logo.png' }).expect(400);
+    expect(bad.body.error).toBe('Upload your logo as an image');
+    expect((await request(app).post('/sponsor/checkout').send({ ...base, logoUrl: 'mmm' }).expect(400)).body.error).toBe('Upload your logo as an image');
+    const { body: order } = await request(app).post('/sponsor/checkout').send({ ...base, logoUrl: up.logoUrl, prizeExtra: 'branded merch' }).expect(201);
+    expect((await SponsorOrder.findOne({ reference: order.reference }))!).toMatchObject({ logoUrl: up.logoUrl, prizeDescription: 'GH₵100 shared + branded merch' });
+  });
+
   it('pay online, get a live public challenge, and winners are paid through Paystack', async () => {
     const { body: quote } = await request(app).get('/sponsor/quote?prize=1000').expect(200);
     expect(quote).toMatchObject({ prize: 100000, fee: 15000, total: 115000, feePct: 15 });
 
     const { body: order } = await request(app)
       .post('/sponsor/checkout')
-      .send({ company: 'Kasapreko', email: 'brand@kasa.test', challengeName: 'Kasa Week', prizeDescription: 'GH₵1,000 shared', prizeValueGhs: 1000, maxWinners: 2, durationHours: 48 })
+      .send({ company: 'Kasapreko', email: 'brand@kasa.test', challengeName: 'Kasa Week', prizeDescription: 'GH₵9,999 typed by hand', prizeValueGhs: 1000, maxWinners: 2, durationHours: 48 })
       .expect(201);
+    // The prize line comes from the paid amount, not from anything the sponsor typed.
+    expect((await SponsorOrder.findOne({ reference: order.reference }))!.prizeDescription).toBe('GH₵1,000 shared by the first 2 finishers');
     expect(order).toMatchObject({ total: 115000 });
     expect((await request(app).get(`/sponsor/orders/${order.reference}`).expect(200)).body).toMatchObject({ status: 'pending', challenge: null });
 

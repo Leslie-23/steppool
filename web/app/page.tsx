@@ -2,21 +2,50 @@ import Image from "next/image";
 import Link from "next/link";
 
 const POINTS = [
-  { k: "Your goal, not theirs", v: "Every walker gets a target from their own usual week, so a desk job and a market stall both have a real shot." },
-  { k: "Everyone who makes it wins", v: "Hit your goal and you share the pool. No single winner, no luck, just walking." },
-  { k: "Fair by design", v: "Steps are verified on our side. Shakers, fake apps and manual entries don't count." },
+  {
+    k: "Your goal, not theirs",
+    v: "Every walker gets a target from their own usual week, so a desk job and a market stall both have a real shot.",
+  },
+  {
+    k: "Everyone who makes it wins",
+    v: "Hit your goal and you share the pool. No single winner, no luck, just walking.",
+  },
+  {
+    k: "Fair by design",
+    v: "Steps are verified on our side. Shakers, fake apps and manual entries don't count.",
+  },
 ];
 
 /** Placeholder landing until the full marketing site; keeps the brand, not the framework template. */
 export default function Home() {
   return (
-    <main className="min-h-screen px-4" style={{ background: "radial-gradient(70% 45% at 50% 0%, #d7ff3a22, transparent 70%)" }}>
+    <main
+      className="min-h-screen px-4"
+      style={{
+        background:
+          "radial-gradient(70% 45% at 50% 0%, #d7ff3a22, transparent 70%)",
+      }}
+    >
       <div className="max-w-5xl mx-auto py-8 flex items-center justify-between">
         <span className="flex items-center gap-3">
-          <Image src="/steppool-icon.svg" alt="" width={32} height={32} unoptimized className="rounded-lg" />
-          <span className="num text-lg font-bold tracking-[0.25em]" style={{ color: "var(--volt)" }}>STEPPOOL</span>
+          <Image
+            src="/steppool-icon.svg"
+            alt=""
+            width={32}
+            height={32}
+            unoptimized
+            className="rounded-lg"
+          />
+          <span
+            className="num text-lg font-bold tracking-[0.25em]"
+            style={{ color: "var(--volt)" }}
+          >
+            STEPPOOL
+          </span>
         </span>
-        <Link href="/admin" className="text-sm text-muted hover:text-ink">Admin</Link>
+        <Link href="/admin" className="text-sm text-muted hover:text-ink">
+          Admin
+        </Link>
       </div>
       <section className="max-w-5xl mx-auto pt-16 pb-24">
         <h1 className="num font-bold text-5xl sm:text-7xl leading-[0.95] tracking-tight">
@@ -26,10 +55,13 @@ export default function Home() {
           <br />
           <span style={{ color: "var(--volt)" }}>Share the pool.</span>
         </h1>
-        <p className="text-muted text-lg mt-6 max-w-xl">Step challenges with your class, your office or the whole country. Free to play. No deposits, no betting.</p>
+        <p className="text-muted text-lg mt-6 max-w-xl">
+          Step challenges with your class, your office or the whole country.
+          Free to play. No deposits, no betting.
+        </p>
         <div className="flex flex-wrap gap-3 mt-10">
-          <span className="btn btn-volt h-12 px-6">iPhone · coming soon</span>
-          <span className="btn btn-ghost h-12 px-6">Android · coming soon</span>
+          <span className="btn btn-volt h-12 px-6">iPhone · Live </span>
+          <span className="btn btn-ghost h-12 px-6">Android · Live </span>
         </div>
         <div className="grid md:grid-cols-3 gap-3 mt-20">
           {POINTS.map((p) => (
@@ -41,11 +73,19 @@ export default function Home() {
         </div>
         <div className="card p-6 mt-3 flex flex-wrap items-center justify-between gap-4">
           <div>
-            <div className="label" style={{ color: "var(--gold)" }}>For brands</div>
-            <div className="num text-2xl font-bold mt-1">Sponsor a challenge</div>
-            <p className="text-muted text-sm mt-1">Put your name in front of thousands of people walking every day.</p>
+            <div className="label" style={{ color: "var(--gold)" }}>
+              For brands
+            </div>
+            <div className="num text-2xl font-bold mt-1">
+              Sponsor a challenge
+            </div>
+            <p className="text-muted text-sm mt-1">
+              Put your name in front of thousands of people walking every day.
+            </p>
           </div>
-          <Link className="btn btn-gold h-12 px-6" href="/sponsor">Sponsor a challenge</Link>
+          <Link className="btn btn-gold h-12 px-6" href="/sponsor">
+            Sponsor a challenge
+          </Link>
         </div>
       </section>
     </main>

@@ -40,3 +40,6 @@ yarn-debug.*
 yarn-error.*
 server/.env
 .mongo/
+
+# Local credentials (never commit)
+secrets/

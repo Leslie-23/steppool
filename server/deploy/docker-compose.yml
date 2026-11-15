@@ -15,6 +15,7 @@ services:
       PORT: "4000"
       JOBS_IN_PROCESS: "true"
       REDIS_URL: redis://redis:6379
+      OSRM_FOOT_URL: http://osrm:5000
     depends_on: [redis]
     networks: [default, proxy]
     healthcheck:
@@ -32,6 +33,18 @@ services:
     command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
     volumes:
       - redis_data:/data
+
+  # Walking routes for directions, loop suggestions and route snapping. Reads the Ghana footpath data the
+  # Trofficient project builds (deploy/oracle/osrm/prepare.sh foot) read-only, in its own container so
+  # neither project depends on the other being up. Rebuild that data, then: docker restart steppool-osrm
+  osrm:
+    image: ghcr.io/project-osrm/osrm-backend:v5.27.1
+    container_name: steppool-osrm
+    restart: unless-stopped
+    command: ["osrm-routed", "--algorithm", "mld", "--max-matching-size", "100", "/data/ghana-latest.osrm"]
+    mem_limit: 1g
+    volumes:
+      - /home/ubuntu/trofficient/deploy/oracle/osrm/data-foot:/data:ro
 
 networks:
   proxy:

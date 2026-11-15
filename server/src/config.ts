@@ -46,6 +46,8 @@ export const config = {
   paystackSecret: env.PAYSTACK_SECRET_KEY || undefined,
   /** The marketing site, where sponsors pay and land afterwards. */
   webUrl: env.WEB_URL ?? 'https://steppool-web.onrender.com',
+  /** Self-hosted OSRM walking router (Ghana), e.g. http://osrm:5000. Without it, directions answer 503. */
+  osrmFootUrl: env.OSRM_FOOT_URL?.replace(/\/$/, '') || undefined,
   /** StepPool's fee on top of a sponsor's prize, in percent. */
   sponsorFeePct: Number(env.SPONSOR_FEE_PCT ?? 15),
 };

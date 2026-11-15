@@ -6,6 +6,7 @@ import { DAY_MS, IngestBody, type Analytics, type InboxItem, type LedgerLine, ty
 import { CREDITS, MAX_CUSTOM_DAILY, MIN_CUSTOM_DAILY } from '../../shared/goals.js';
 
 import { deleteAccount } from './account.js';
+import { toRecords } from './achievements.js';
 import { limit, requireUser } from './auth.js';
 import { HttpError } from './errors.js';
 import { account } from './ledger.js';
@@ -95,7 +96,7 @@ stepsRouter.get('/analytics', async (req, res) => {
   const from = today - 29 * DAY_MS;
   const [days, user, hourRows, parts, wins] = await Promise.all([
     dailyTotals(userId, from, today + DAY_MS),
-    User.findById(userId, { baselineDaily: 1, dailyTargetOverride: 1 }).lean(),
+    User.findById(userId, { baselineDaily: 1, dailyTargetOverride: 1, records: 1, badges: 1 }).lean(),
     HourBucket.aggregate<{ _id: number; total: number }>([
       { $match: { userId, hour: { $gte: new Date(from), $lt: new Date(today + DAY_MS) } } },
       { $group: { _id: { $hour: '$hour' }, total: { $sum: '$counted' } } },
@@ -137,6 +138,8 @@ stepsRouter.get('/analytics', async (req, res) => {
       creditsWon: wins[0]?.total ?? 0,
       prizesWon: await Payout.countDocuments({ userId, kind: 'sponsor_prize' }),
     },
+    records: user ? toRecords(user) : undefined,
+    badges: (user?.badges ?? []).filter((b) => b.id && b.at).map((b) => ({ id: b.id!, at: b.at!.toISOString() })),
   };
   res.json(body);
 });
@@ -156,6 +159,7 @@ notificationsRouter.get('/', async (req, res) => {
       title: n.title,
       body: n.body,
       challengeId: (n.data as unknown as Record<string, string> | undefined)?.challengeId,
+      screen: (n.data as unknown as Record<string, string> | undefined)?.screen,
       read: !!n.readAt,
       at: (n.createdAt as Date).toISOString(),
     }),

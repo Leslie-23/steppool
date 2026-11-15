@@ -39,7 +39,8 @@ export const useInbox = create<InboxState>((set, get) => ({
 }));
 
 /** Where a notification should take you when tapped. */
-export function hrefFor(item: Pick<InboxItem, 'kind' | 'challengeId'>) {
-  if (!item.challengeId) return null;
-  return item.kind === 'results' ? `/challenge/${item.challengeId}/results` : `/challenge/${item.challengeId}`;
+export function hrefFor(item: Pick<InboxItem, 'kind' | 'challengeId' | 'screen'>) {
+  if (item.challengeId) return item.kind === 'results' ? `/challenge/${item.challengeId}/results` : `/challenge/${item.challengeId}`;
+  // Records, badges and the weekly recap open the screen that shows them.
+  return item.screen === 'analytics' ? '/analytics' : null;
 }

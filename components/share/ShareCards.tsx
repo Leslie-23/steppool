@@ -85,6 +85,24 @@ export const ResultCard = forwardRef<View, { c: ChallengeSummary; name: string; 
   },
 );
 
+/** Record card: shared when a personal best falls. */
+export const RecordCard = forwardRef<View, { name: string; kicker: string; steps: number; when: string; streak: number }>(function RecordCard({ name, kicker, steps, when, streak }, ref) {
+  return (
+    <View ref={ref} collapsable={false}>
+      <Frame accent={color.gold}>
+        <Text allowFontScaling={false} style={styles.kicker}>{kicker.toUpperCase()}</Text>
+        <Text allowFontScaling={false} style={[styles.hero, { color: color.gold }]}>{steps.toLocaleString()}</Text>
+        <Text allowFontScaling={false} style={styles.title}>steps</Text>
+        <View style={styles.stats}>
+          <Stat label="Set" value={when} />
+          <Stat label="Longest streak" value={`${streak} days`} accent={streak > 0 ? color.gold : undefined} />
+        </View>
+        <Text allowFontScaling={false} style={[styles.small, { marginTop: 28 }]}>{name} on StepPool</Text>
+      </Frame>
+    </View>
+  );
+});
+
 function Stat({ label, value, accent, coin }: { label: string; value: string; accent?: string; coin?: 'gold' | 'silver' }) {
   return (
     <View style={{ flex: 1 }}>

@@ -81,8 +81,8 @@ export default function RootLayout() {
     // A push arriving while open bumps the bell; tapping one (even from a cold start) opens its challenge.
     const received = Notifications.addNotificationReceivedListener(() => refreshInbox());
     const openFromPush = (r: Notifications.NotificationResponse | null) => {
-      const d = r?.notification.request.content.data as { challengeId?: string; kind?: string } | undefined;
-      const href = d?.challengeId ? hrefFor({ kind: (d.kind ?? 'goal') as never, challengeId: d.challengeId }) : null;
+      const d = r?.notification.request.content.data as { challengeId?: string; kind?: string; screen?: string } | undefined;
+      const href = d ? hrefFor({ kind: (d.kind ?? 'goal') as never, challengeId: d.challengeId, screen: d.screen }) : null;
       if (href) router.push(href as never);
     };
     Notifications.getLastNotificationResponseAsync().then(openFromPush).catch(() => {});

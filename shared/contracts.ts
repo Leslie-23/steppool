@@ -101,6 +101,8 @@ export interface ChallengeSummary {
   startsAt: string;
   endsAt: string;
   sponsor?: Sponsor;
+  /** The standing weekly challenge StepPool runs itself. */
+  house?: boolean;
   /** Present when the caller has joined. */
   me?: { goal: number; steps: number; rank: number; goalHitAt?: string };
 }
@@ -123,7 +125,18 @@ export interface ChallengeResults {
   /** Cash challenges: what each player who missed got back, in pesewas. */
   perMisser?: number;
   top: LeaderboardRow[];
+  /** Friend challenges can be run again with the same group. */
+  canRematch?: boolean;
+  /** A rematch someone already started that is still open to join. */
+  rematch?: { id: string; name: string; players: number; joined: boolean };
   me?: { steps: number; rank: number; goal: number; goalHit: boolean; wonCredits?: number; wonPesewas?: number; prize?: string; payoutId?: string; flagged?: boolean };
+}
+
+/** All-time personal records. Dates are ISO strings; `bestWeek` is the Monday the week started. */
+export interface Records {
+  bestDay: { day: string; steps: number } | null;
+  bestWeek: { week: string; steps: number } | null;
+  longestStreak: number;
 }
 
 export interface Analytics {
@@ -141,6 +154,10 @@ export interface Analytics {
   streak: number;
   longestStreak: number;
   challenges: { joined: number; finished: number; live: number; creditsWon: number; prizesWon: number };
+  /** All-time records; absent until the first sync after they were introduced. */
+  records?: Records;
+  /** Badges earned so far (ids from shared/engage BADGES). */
+  badges?: { id: string; at: string }[];
 }
 
 export type NotificationKind = 'goal' | 'overtake' | 'reminder' | 'results' | 'joins' | 'announcement';
@@ -152,6 +169,8 @@ export interface InboxItem {
   title: string;
   body: string;
   challengeId?: string;
+  /** A screen to open instead of a challenge, e.g. "analytics". */
+  screen?: string;
   read: boolean;
   at: string;
 }
@@ -227,7 +246,8 @@ export type LedgerKind =
   | 'sponsor_fund'
   | 'sponsor_fee'
   | 'prize_payout'
-  | 'prize_payout_reversal';
+  | 'prize_payout_reversal'
+  | 'prize_fund';
 
 export interface LedgerLine {
   id: string;

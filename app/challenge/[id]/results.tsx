@@ -27,6 +27,8 @@ export default function Results() {
   const setMe = useSession((s) => s.setMe);
   const { data, error, refresh } = useApi(() => api.results(id), [id], `results:${id}`);
   const [play, setPlay] = useState(0);
+  const [rematching, setRematching] = useState(false);
+  const [rematchError, setRematchError] = useState<string | null>(null);
   const cardRef = useRef<View>(null);
   const r = data?.me;
 
@@ -61,6 +63,23 @@ export default function Results() {
   }
   const c = data.challenge;
   const isCash = c.kind === 'cash';
+  const again = data.rematch;
+
+  const rematch = async () => {
+    if (again?.joined) return router.replace(`/challenge/${again.id}`);
+    setRematching(true);
+    setRematchError(null);
+    try {
+      const next = await api.rematch(c.id);
+      haptic.success();
+      api.me().then(setMe).catch(() => {});
+      router.replace(`/challenge/${next.id}`);
+    } catch (e) {
+      haptic.error();
+      setRematchError((e as Error).message);
+      setRematching(false);
+    }
+  };
   const won = r?.wonPesewas ? `${ghs(r.wonPesewas)} back` : r?.wonCredits ? `+${r.wonCredits} credits` : r?.prize;
 
   return (
@@ -125,6 +144,23 @@ export default function Results() {
             <LeaderRow key={row.userId} row={row} isMe={row.userId === me?.id} />
           ))}
         </View>
+
+        {data.canRematch ? (
+          <Animated.View entering={FadeInDown.delay(450).springify()}>
+            <Card tone="volt" style={{ gap: space.md }}>
+              <View style={{ gap: 4 }}>
+                <T v="heading" style={{ fontSize: 17 }}>{again ? (again.joined ? "You're in the rematch" : 'The rematch is on') : 'Run it back?'}</T>
+                <T v="caption">
+                  {again
+                    ? `${again.name} · ${again.players} in so far.`
+                    : `Same group, same rules${c.entryCredits ? `, ${c.entryCredits} credits to enter` : ', free to enter'}. Everyone from this challenge gets an invite.`}
+                </T>
+              </View>
+              <Button label={rematching ? 'Setting up…' : again ? (again.joined ? 'Open rematch' : 'Join the rematch') : 'Start a rematch'} onPress={rematch} disabled={rematching} />
+              {rematchError ? <T v="caption" style={{ color: color.danger }}>{rematchError}</T> : null}
+            </Card>
+          </Animated.View>
+        ) : null}
 
         <View style={{ gap: space.md }}>
           {r ? (

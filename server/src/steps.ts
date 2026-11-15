@@ -4,6 +4,7 @@ import { DAY_MS, type IngestBody } from '../../shared/contracts.js';
 import { baselineFrom } from '../../shared/goals.js';
 
 import { config } from './config.js';
+import { checkRecords, weekStart } from './achievements.js';
 import { Challenge, HourBucket, Participant, StepSampleModel, User } from './models.js';
 import { notify } from './push.js';
 import { rewardDailyTarget } from './rewards.js';
@@ -113,6 +114,10 @@ export async function ingest(userIdStr: string, body: IngestBody, now = new Date
 
   const today = await sumBuckets(userId, new Date(dayStart(now.getTime())), new Date(dayStart(now.getTime()) + DAY_MS));
   await rewardDailyTarget(userId, today.counted, now.getTime());
+  if (flagged.length) {
+    const week = weekStart(now.getTime());
+    await checkRecords(userId, now.getTime(), today.counted, async () => (await sumBuckets(userId, new Date(week), new Date(week + 7 * DAY_MS))).counted);
+  }
   return { accepted: flagged.filter((s) => !s.rejected).length, todaySteps: today.counted };
 }
 

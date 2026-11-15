@@ -5,13 +5,14 @@ import type { Types } from 'mongoose';
 import { DAY_MS, INVITE_CODE_ALPHABET } from '../../shared/contracts.js';
 import { CREDITS, dailyTarget } from '../../shared/goals.js';
 
+import { noteStreak } from './achievements.js';
 import { account, inTransaction, transfer } from './ledger.js';
 import { Ledger, User, type UserDoc } from './models.js';
 import { notify } from './push.js';
 
-const dayKey = (t: number) => new Date(Math.floor(t / DAY_MS) * DAY_MS).toISOString().slice(0, 10);
+export const dayKey = (t: number) => new Date(Math.floor(t / DAY_MS) * DAY_MS).toISOString().slice(0, 10);
 /** ISO week id like 2026-W40, used to make the Monday top-up idempotent. */
-function weekKey(t: number) {
+export function weekKey(t: number) {
   const d = new Date(Math.floor(t / DAY_MS) * DAY_MS);
   const day = (d.getUTCDay() + 6) % 7; // Monday = 0
   d.setUTCDate(d.getUTCDate() - day + 3); // Thursday of this week decides the ISO year
@@ -50,12 +51,13 @@ export async function rewardDailyTarget(userId: Types.ObjectId, todaySteps: numb
   if (!(await award(userId, CREDITS.dailyTargetHit, 'walk_reward', `walk:${userId}:${today}`, 'Daily target hit'))) return;
 
   // Streak = consecutive days (ending today) with a walk reward.
-  const since = dayKey(now - 60 * DAY_MS);
+  const since = dayKey(now - 370 * DAY_MS);
   const refs = new Set(
     (await Ledger.find({ account: account.user(userId), kind: 'walk_reward', ref: { $gte: `walk:${userId}:${since}` } }, { ref: 1 }).lean()).map((l) => l.ref),
   );
   let streak = 0;
   for (let t = now; refs.has(`walk:${userId}:${dayKey(t)}`); t -= DAY_MS) streak++;
+  await noteStreak(userId, streak);
   const bonus = streak > 0 && streak % CREDITS.streakEvery === 0;
   if (bonus) await award(userId, CREDITS.streakBonus, 'streak_bonus', `streak:${userId}:${today}`, `${streak}-day streak`);
   notify(userId, 'goal', {

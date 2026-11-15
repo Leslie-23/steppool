@@ -88,6 +88,8 @@ export const api = {
   leaderboard: (id: string) => request<LeaderboardRow[]>('GET', `/challenges/${id}/leaderboard`),
   create: (body: CreateChallengeBody) => request<ChallengeSummary>('POST', '/challenges', body),
   join: (id: string) => request<ChallengeSummary>('POST', `/challenges/${id}/join`),
+  /** Starts a rematch of a finished challenge, or joins the one a friend already started. */
+  rematch: (id: string) => request<ChallengeSummary>('POST', `/challenges/${id}/rematch`),
   wallet: () => request<{ balance: number; lines: LedgerLine[]; payouts: Payout[] }>('GET', '/wallet'),
   claim: (payoutId: string, details: { momoNumber: string; network: 'mtn' | 'telecel' | 'airteltigo' }) =>
     request<Payout>('POST', `/payouts/${payoutId}/claim`, details),

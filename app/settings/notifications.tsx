@@ -14,11 +14,11 @@ import { color, space } from '@/theme/tokens';
 
 const ROWS: { kind: NotificationKind; title: string; body: string }[] = [
   { kind: 'overtake', title: 'Overtakes', body: 'When someone passes you on a leaderboard' },
-  { kind: 'goal', title: 'Goal hit', body: 'The moment you lock in your share of the pool' },
-  { kind: 'reminder', title: 'Reminders', body: 'Challenge starting, and the final hour' },
+  { kind: 'goal', title: 'Goal hit', body: 'Goals and targets hit, new records and badges' },
+  { kind: 'reminder', title: 'Reminders', body: 'Challenge starting, the final hour, and an evening nudge when your target is close' },
   { kind: 'results', title: 'Results', body: 'When a challenge settles and payouts land' },
   { kind: 'joins', title: 'New players', body: 'When someone joins a challenge you created' },
-  { kind: 'announcement', title: 'Announcements', body: 'Credit top-ups, new sponsored challenges, big news' },
+  { kind: 'announcement', title: 'Announcements', body: 'Your weekly recap, rematch invites, credit top-ups and big news' },
 ];
 
 type PushStatus = 'granted' | 'denied' | 'undetermined';

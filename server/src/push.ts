@@ -8,7 +8,9 @@ import { redis } from './redis.js';
 
 const expo = new Expo();
 
-type Msg = { title: string; body: string; data?: Record<string, string> };
+/** `dedupe`: a once-only key per user, enforced by the database, so a repeated job (or a second server) can't deliver it twice. */
+/** `inboxOnly`: no push, for news that arrives alongside another push about the same moment. */
+type Msg = { title: string; body: string; data?: Record<string, string>; dedupe?: string; inboxOnly?: boolean };
 
 /**
  * Fire-and-forget notification: always written to the in-app inbox, and pushed to the phone
@@ -24,7 +26,13 @@ export async function deliver(userId: string, kind: NotificationKind, msg: Msg, 
     const ok = await redis().set(`notify:${userId}:${throttleKey}`, '1', 'EX', 3600, 'NX');
     if (!ok) return;
   }
-  await Notification.create({ userId, kind, title: msg.title, body: msg.body, data: msg.data });
+  try {
+    await Notification.create({ userId, kind, title: msg.title, body: msg.body, data: msg.data, dedupe: msg.dedupe });
+  } catch (e) {
+    if (msg.dedupe && (e as { code?: number }).code === 11000) return; // already delivered
+    throw e;
+  }
+  if (msg.inboxOnly) return;
   const user = await User.findById(userId, { pushToken: 1, notifPrefs: 1 }).lean();
   const prefs = (user?.notifPrefs ?? {}) as Partial<Record<NotificationKind, boolean>>;
   if (prefs[kind] === false) return;

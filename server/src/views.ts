@@ -57,6 +57,7 @@ export function toSummary(c: ChallengeDoc, poolCredits: number, me?: { p: Partic
           maxWinners: c.sponsor.maxWinners ?? undefined,
         }
       : undefined,
+    house: c.house || undefined,
     me: me ? { goal: me.p.goal, steps: me.p.steps ?? 0, rank: me.rank, goalHitAt: me.p.goalHitAt?.toISOString() } : undefined,
   };
 }

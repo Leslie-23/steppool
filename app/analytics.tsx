@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
@@ -9,10 +9,14 @@ import { EmptyState, ErrorState } from '@/components/ds/EmptyState';
 import { Odometer } from '@/components/ds/Odometer';
 import { Skeleton } from '@/components/ds/Skeleton';
 import { Card, Row, Screen, T } from '@/components/ds/primitives';
+import { RecordCard } from '@/components/share/ShareCards';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { api } from '@/lib/api';
 import { haptic } from '@/lib/haptics';
+import { useSession } from '@/lib/session';
+import { shareCard } from '@/lib/share';
 import { useApi } from '@/lib/useApi';
+import { BADGES } from '@/shared/engage';
 import { color, space, type } from '@/theme/tokens';
 
 type Icon = Parameters<typeof IconSymbol>[0]['name'];
@@ -22,6 +26,11 @@ export default function AnalyticsScreen() {
   const noSteps = !!data && data.activeDays === 0;
   const [pulling, setPulling] = useState(false);
   const [table, setTable] = useState(false);
+  const name = useSession((s) => s.me?.name ?? '');
+  const cardRef = useRef<View>(null);
+  const records = data?.records;
+  const earned = new Map((data?.badges ?? []).map((b) => [b.id, b.at]));
+  const shortDate = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
   const delta = data && data.lastWeek > 0 ? Math.round(((data.thisWeek - data.lastWeek) / data.lastWeek) * 100) : null;
   const avg = data && data.activeDays ? Math.round(data.days.reduce((a, d) => a + d.steps, 0) / data.activeDays) : 0;
@@ -148,6 +157,46 @@ export default function AnalyticsScreen() {
               </View>
             </Animated.View>
 
+            {records && (records.bestDay || records.longestStreak > 0) ? (
+              <Animated.View entering={FadeInDown.delay(230).springify()} style={{ gap: space.md }}>
+                <Row style={{ justifyContent: 'space-between' }}>
+                  <T v="label">All-time records</T>
+                  {records.bestDay ? (
+                    <Pressable onPress={() => shareCard(cardRef, `My best day on StepPool: ${records.bestDay!.steps.toLocaleString()} steps.`)} hitSlop={10} accessibilityRole="button" accessibilityLabel="Share your best day">
+                      <Row gap={4}>
+                        <IconSymbol name="square.and.arrow.up" size={13} color={color.gold} />
+                        <T v="caption" style={{ color: color.gold }}>Share</T>
+                      </Row>
+                    </Pressable>
+                  ) : null}
+                </Row>
+                <View style={styles.grid}>
+                  <Tile icon="trophy.fill" label="Best day ever" value={records.bestDay ? records.bestDay.steps.toLocaleString() : '—'} sub={records.bestDay ? shortDate(records.bestDay.day) : undefined} gold />
+                  <Tile icon="chart.bar.fill" label="Best week ever" value={records.bestWeek ? records.bestWeek.steps.toLocaleString() : '—'} sub={records.bestWeek ? `Week of ${shortDate(records.bestWeek.week)}` : 'After a full week'} gold />
+                  <Tile icon="crown.fill" label="Longest streak ever" value={`${records.longestStreak}d`} sub="Days in a row on target" gold />
+                </View>
+              </Animated.View>
+            ) : null}
+
+            <Animated.View entering={FadeInDown.delay(245).springify()} style={{ gap: space.md }}>
+              <Row style={{ justifyContent: 'space-between' }}>
+                <T v="label">Badges</T>
+                <T v="caption" style={{ fontSize: 12 }}>{earned.size} of {BADGES.length} earned</T>
+              </Row>
+              <View style={styles.grid}>
+                {BADGES.map((b) => {
+                  const at = earned.get(b.id);
+                  return (
+                    <Card key={b.id} tone={at ? 'gold' : undefined} style={[styles.tile, !at && { opacity: 0.55 }]}>
+                      <IconSymbol name={(at ? b.icon : 'lock.fill') as Icon} size={18} color={at ? color.gold : color.faint} />
+                      <T v="heading" style={{ fontSize: 15, marginTop: space.sm }}>{b.title}</T>
+                      <T v="caption" style={{ fontSize: 11, marginTop: 2 }}>{at ? `Earned ${shortDate(at)}` : b.body}</T>
+                    </Card>
+                  );
+                })}
+              </View>
+            </Animated.View>
+
             <Animated.View entering={FadeInDown.delay(260).springify()} style={{ gap: space.md }}>
               <T v="label">Challenges</T>
               <View style={styles.grid}>
@@ -160,6 +209,11 @@ export default function AnalyticsScreen() {
           </>
         )}
       </ScrollView>
+      {records?.bestDay ? (
+        <View style={styles.offscreen} pointerEvents="none">
+          <RecordCard ref={cardRef} name={name} kicker="My best day" steps={records.bestDay.steps} when={shortDate(records.bestDay.day)} streak={records.longestStreak} />
+        </View>
+      ) : null}
     </Screen>
   );
 }
@@ -181,5 +235,6 @@ const styles = StyleSheet.create({
   delta: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, marginBottom: 12 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.md },
   tile: { width: '47.5%', flexGrow: 1, paddingVertical: space.md },
+  offscreen: { position: 'absolute', left: -10000, top: 0 },
   tableRow: { paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
 });

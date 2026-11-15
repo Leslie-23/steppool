@@ -35,6 +35,9 @@ const UserSchema = new Schema(
       joins: { type: Boolean, default: true },
       announcement: { type: Boolean, default: true },
     },
+    /** All-time personal records, kept current at each sync. Absent until the first sync backfills them. */
+    records: { bestDaySteps: Number, bestDay: Date, bestWeekSteps: Number, bestWeek: Date, longestStreak: Number },
+    badges: [{ _id: false, id: String, at: Date }],
     tokenVersion: { type: Number, default: 0 },
     trustScore: { type: Number, default: 1 },
   },
@@ -76,9 +79,15 @@ const ChallengeSchema = new Schema(
     lastHourPushed: { type: Boolean, default: false },
     /** Set when a sponsor paid for this challenge on the website; its prize can then be sent through Paystack. */
     sponsorOrderId: { type: Schema.Types.ObjectId, ref: 'SponsorOrder' },
+    /** The standing weekly challenge StepPool opens itself. `houseWeek` (e.g. 2026-W47) makes it exactly one per week. */
+    house: Boolean,
+    houseWeek: String,
+    /** The finished challenge this one is a rematch of. */
+    rematchOf: { type: Schema.Types.ObjectId, ref: 'Challenge', index: true },
   },
   opts,
 );
+ChallengeSchema.index({ houseWeek: 1 }, { unique: true, partialFilterExpression: { houseWeek: { $type: 'string' } } });
 
 const ParticipantSchema = new Schema(
   {
@@ -150,7 +159,7 @@ const LedgerSchema = new Schema(
     currency: { type: String, enum: ['CREDIT', 'GHS'], default: 'CREDIT' },
     kind: {
       type: String,
-      enum: ['signup_grant', 'entry', 'payout', 'refund', 'house_remainder', 'walk_reward', 'streak_bonus', 'weekly_topup', 'referral', 'admin_grant', 'deposit', 'rake', 'withdrawal', 'withdrawal_reversal', 'sponsor_fund', 'sponsor_fee', 'prize_payout', 'prize_payout_reversal'],
+      enum: ['signup_grant', 'entry', 'payout', 'refund', 'house_remainder', 'walk_reward', 'streak_bonus', 'weekly_topup', 'referral', 'admin_grant', 'deposit', 'rake', 'withdrawal', 'withdrawal_reversal', 'sponsor_fund', 'sponsor_fee', 'prize_payout', 'prize_payout_reversal', 'prize_fund'],
       required: true,
     },
     /** Human-readable reason (e.g. an admin grant's note). */
@@ -246,11 +255,14 @@ const NotificationSchema = new Schema(
     title: { type: String, required: true },
     body: { type: String, required: true },
     data: { type: Map, of: String },
+    /** Once-only key (e.g. recap:2026-W46). Two servers running the same job can't both deliver it. */
+    dedupe: String,
     readAt: Date,
   },
   { timestamps: { createdAt: true, updatedAt: false }, versionKey: false },
 );
 NotificationSchema.index({ userId: 1, createdAt: -1 });
+NotificationSchema.index({ userId: 1, dedupe: 1 }, { unique: true, partialFilterExpression: { dedupe: { $type: 'string' } } });
 // Inbox keeps 60 days.
 NotificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 86400 });
 

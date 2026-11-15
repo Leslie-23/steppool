@@ -36,6 +36,7 @@ const LABEL: Record<LedgerLine['kind'], string> = {
   sponsor_fee: 'Sponsor fee',
   prize_payout: 'Prize sent',
   prize_payout_reversal: 'Prize returned',
+  prize_fund: 'Weekly prize',
 };
 
 export default function WalletScreen() {

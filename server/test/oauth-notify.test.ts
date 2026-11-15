@@ -86,8 +86,10 @@ describe('notifications', () => {
     await new Promise((r) => setTimeout(r, 300)); // notify is fire-and-forget
 
     const { body: inbox } = await request(app).get('/notifications').set(creator.auth).expect(200);
-    expect(inbox.unread).toBe(1);
-    expect(inbox.items[0]).toMatchObject({ kind: 'joins', title: 'Friend joined Inbox Walk', challengeId: c.id, read: false });
+    // The join, plus the creator's "first challenge" badge.
+    expect(inbox.unread).toBe(2);
+    expect(inbox.items.find((i: { kind: string }) => i.kind === 'joins')).toMatchObject({ title: 'Friend joined Inbox Walk', challengeId: c.id, read: false });
+    expect(inbox.items.find((i: { kind: string }) => i.kind === 'goal')).toMatchObject({ title: 'Badge earned: In the Pool', screen: 'analytics' });
 
     const { body: after } = await request(app).post('/notifications/read').set(creator.auth).send({}).expect(200);
     expect(after.unread).toBe(0);

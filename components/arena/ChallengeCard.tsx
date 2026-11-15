@@ -81,7 +81,10 @@ export function ChallengeCard({ c }: { c: ChallengeSummary }) {
     <Press onPress={() => router.push(`/challenge/${c.id}`)}>
       <Card tone={won ? 'gold' : undefined}>
         <Row style={{ justifyContent: 'space-between' }}>
-          {statusPill(c)}
+          <Row gap={6}>
+            {statusPill(c)}
+            {c.house ? <Pill label="Weekly · open to all" tone="gold" /> : null}
+          </Row>
           <Row gap={6}>
             <IconSymbol name="clock.fill" size={12} color={color.muted} />
             <Countdown to={c.status === 'upcoming' ? c.startsAt : c.endsAt} style={{ color: color.muted, fontSize: 13 }} />

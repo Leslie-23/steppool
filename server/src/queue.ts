@@ -4,7 +4,7 @@ import { newRedis } from './redis.js';
 
 export const QUEUE = 'challenges';
 
-export type JobName = 'start' | 'last-hour' | 'settle' | 'sweep' | 'weekly-topup';
+export type JobName = 'start' | 'last-hour' | 'settle' | 'sweep' | 'weekly-topup' | 'weekly-challenge' | 'weekly-recap' | 'nudge';
 export type JobData = { challengeId?: string };
 
 let queue: Queue<JobData, unknown, JobName> | null = null;

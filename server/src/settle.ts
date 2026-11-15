@@ -1,5 +1,6 @@
 import { ghs, splitCash } from '../../shared/cash.js';
 
+import { awardBadges } from './achievements.js';
 import { Challenge, Participant, Payout } from './models.js';
 import { account, balanceOf, cash, inTransaction, transfer } from './ledger.js';
 import { notify } from './push.js';
@@ -82,6 +83,9 @@ export async function settleChallenge(challengeId: string, now = new Date()) {
           for (const p of parts) {
             if (c.entryCredits > 0) await transfer(session, { from: account.pool(c._id), to: account.user(p.userId), amount: c.entryCredits, kind: 'refund', challengeId: c._id });
           }
+          // A house-funded prize nobody won goes back to the house; the pool always ends at zero.
+          const left = await balanceOf(account.pool(c._id), session);
+          if (left > 0) await transfer(session, { from: account.pool(c._id), to: account.house, amount: left, kind: 'house_remainder', challengeId: c._id });
         }
       } else {
         const winners = finishers.slice(0, c.sponsor?.maxWinners ?? finishers.length);
@@ -117,6 +121,10 @@ export async function settleChallenge(challengeId: string, now = new Date()) {
       body: cashBody ?? (won ? `Results are in for ${c.name}. Collect your share.` : 'See how everyone finished.'),
       data: { challengeId: cid, results: '1' },
     });
+  }
+  for (const userId of winnerIds) {
+    const wins = await Participant.countDocuments({ userId, status: 'finished' });
+    await awardBadges(userId, wins >= 5 ? ['first_win', 'wins_5'] : ['first_win']).catch((e) => console.error('badges', e));
   }
   return { finishers: winnerIds.size };
 }

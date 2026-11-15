@@ -26,6 +26,7 @@ export default function DeleteAccount() {
       <ul className="list-disc pl-5 space-y-2">
         <li>Your profile: name, email address and sign-in identifiers.</li>
         <li>Your step data and activity history.</li>
+        <li>Walks you recorded, which are stored only on your phone.</li>
         <li>Your notifications and device push token.</li>
         <li>Your places in challenges, your credits and any unclaimed prizes.</li>
         <li>The mobile money number on any prize claim that has not been paid.</li>

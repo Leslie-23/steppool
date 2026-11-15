@@ -122,6 +122,19 @@ Justification text:
 StepPool is a walking-challenge app. It reads step counts (and which app or device recorded them) from Health Connect to show the user's daily progress, rank them on the leaderboards of challenges they join, and verify whether they reached their goal when a challenge ends. Background read keeps leaderboards up to date and lets challenges settle on time without the user reopening the app. StepPool reads steps only, never writes to Health Connect, never uses health data for advertising and never sells it.
 ```
 
+### Location permission and foreground service
+The app asks for location only when the user starts recording a walk (or plans a route). It does **not** request background location (`ACCESS_BACKGROUND_LOCATION` is not in the manifest), so the background-location declaration does not apply.
+
+It does use a **foreground service of type location** to keep recording with the screen off. In **App content → Foreground service permissions**, declare `FOREGROUND_SERVICE_LOCATION`:
+- **Use case:** User-initiated location sharing / fitness tracking ("Fitness: recording a workout").
+- **Description:**
+```
+When the user presses Start on the Record a walk screen, StepPool records their walk: it draws the route on a map and measures distance, pace and speed until they press Finish. A foreground service with an ongoing notification (showing live distance, time and speed, with Pause and Finish buttons) keeps recording while the phone is locked or in a pocket. The service starts only from that user action and stops when the walk is finished or discarded.
+```
+- **Video:** a short screen recording of Record a walk → Start → lock/leave the app → the ongoing notification → Finish.
+
+`ACTIVITY_RECOGNITION` is used to count steps and cadence during a recorded walk.
+
 ### Advertising ID
 
 No, the app does not use an advertising ID.

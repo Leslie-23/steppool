@@ -8,7 +8,7 @@ const H = ({ children }: { children: React.ReactNode }) => <h2 className="num te
 
 export default function Privacy() {
   return (
-    <LegalPage title="Privacy Policy" updated="4 October 2026">
+    <LegalPage title="Privacy Policy" updated="16 November 2026">
       <p>StepPool (&ldquo;we&rdquo;) runs walking challenges. This policy explains what we collect, why, and your choices. Questions: <a className="underline" href="mailto:leslieajayi27@gmail.com">leslieajayi27@gmail.com</a>.</p>
 
       <H>What we collect</H>
@@ -18,6 +18,8 @@ export default function Privacy() {
         <li><b>Activity in StepPool:</b> challenges you create or join, credits earned and spent, and notification preferences.</li>
         <li><b>Prize claims:</b> if you claim a sponsored prize, the mobile money number and network you give us so the prize can be sent.</li>
         <li><b>Device push token:</b> if you allow notifications, so we can send them.</li>
+        <li><b>Location, while you record a walk:</b> with your permission, StepPool uses your phone&apos;s location to draw your route and measure distance and pace, including while the phone is locked during that walk. Recorded routes are stored on your phone only and are never uploaded. If you ask for directions, a suggested loop, or have a finished walk matched to mapped paths, the coordinates needed are sent to our server to work out the route and are not stored.</li>
+        <li><b>Motion, while you record a walk:</b> your phone&apos;s step counter is read to show steps and cadence for that walk. This stays on your phone.</li>
       </ul>
 
       <H>How we use it</H>
@@ -32,10 +34,10 @@ export default function Privacy() {
       <p>Other people in a challenge you join can see your display name, step total and rank in that challenge. Nobody else sees your step data.</p>
 
       <H>Service providers</H>
-      <p>We use hosting and infrastructure providers to run StepPool, including Render (servers), MongoDB Atlas (database), Resend (email) and Expo (push notifications). They process data only on our behalf.</p>
+      <p>We use hosting and infrastructure providers to run StepPool, including Oracle Cloud and Render (servers), MongoDB Atlas (database), Resend (email) and Expo (push notifications). They process data only on our behalf. Maps are drawn with tiles from OpenFreeMap, built on OpenStreetMap data; your phone requests the tiles for the area you are looking at directly from them.</p>
 
       <H>Retention and deletion</H>
-      <p>We keep your data while your account is active. Notifications are deleted after 60 days. You can delete your account at any time in the app (Profile → Delete account); your profile, step data, notifications and unclaimed prizes are deleted immediately. Records of payments and the anonymous bookkeeping behind challenge pools are kept as required for accounting. If you can&apos;t use the app, email us from the address you signed up with and we&apos;ll delete it within 30 days. You can stop step sharing at any time in Apple Health or Health Connect settings.</p>
+      <p>We keep your data while your account is active. Notifications are deleted after 60 days. You can delete your account at any time in the app (Profile → Delete account); your profile, step data, notifications and unclaimed prizes are deleted immediately. Records of payments and the anonymous bookkeeping behind challenge pools are kept as required for accounting. If you can&apos;t use the app, email us from the address you signed up with and we&apos;ll delete it within 30 days. Recorded walks can be deleted one by one in the app, and are removed from your phone when you delete your account. You can stop step sharing at any time in Apple Health or Health Connect settings, and location access in your phone&apos;s settings.</p>
 
       <H>Children</H>
       <p>StepPool is not intended for children under 13.</p>

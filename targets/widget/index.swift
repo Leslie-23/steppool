@@ -5,5 +5,6 @@ import WidgetKit
 struct StepPoolWidgets: WidgetBundle {
   var body: some Widget {
     StepWidget()
+    WalkLiveActivity()
   }
 }

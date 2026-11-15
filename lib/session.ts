@@ -60,6 +60,13 @@ export const useSession = create<SessionState>((set, get) => ({
     await persist(get());
   },
   signOut: async () => {
+    // A walk being recorded belongs to the account that started it; stop it rather than carry it over.
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded lazily: the recorder imports this module
+      await (require('./walk/recorder') as typeof import('./walk/recorder')).recorder.discard();
+    } catch {
+      // recorder unavailable (web): nothing to stop
+    }
     apiCache.clear();
     set({ tokens: null, me: null, healthGranted: false });
     await SecureStore.deleteItemAsync(KEY);

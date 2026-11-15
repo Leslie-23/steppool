@@ -17,9 +17,12 @@
       "infoPlist": {
         "UIBackgroundModes": [
           "fetch",
-          "processing"
+          "processing",
+          "location",
+          "audio"
         ],
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSSupportsLiveActivities": true
       },
       "entitlements": {
         "com.apple.security.application-groups": [
@@ -58,7 +61,8 @@
       ],
       "permissions": [
         "android.permission.health.READ_STEPS",
-        "android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND"
+        "android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND",
+        "android.permission.ACTIVITY_RECOGNITION"
       ],
       "googleServicesFile": "./google-services.json"
     },
@@ -107,7 +111,25 @@
       ],
       "expo-font",
       "@bacons/apple-targets",
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "StepPool uses your location while you record a walk, to draw your route and measure distance and pace.",
+          "locationAlwaysAndWhenInUsePermission": false,
+          "locationAlwaysPermission": false,
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": false,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ],
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "StepPool counts your steps and cadence while you record a walk."
+        }
+      ],
+      "@maplibre/maplibre-react-native"
     ],
     "experiments": {
       "typedRoutes": true,

@@ -4,8 +4,10 @@ import { StyleSheet, Text, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 
 import { Coin } from '@/components/ds/Coin';
+import { RouteThumb } from '@/components/walk/bits';
 import { inviteUrl } from '@/lib/invite';
 import { ghs } from '@/shared/cash';
+import { fmtDuration, fmtKm, fmtPace } from '@/shared/walk';
 import type { ChallengeSummary } from '@/shared/contracts';
 import { color, font } from '@/theme/tokens';
 
@@ -102,6 +104,30 @@ export const RecordCard = forwardRef<View, { name: string; kicker: string; steps
     </View>
   );
 });
+
+/** Walk card: the route drawn large, with the numbers under it. */
+export const WalkCard = forwardRef<View, { name: string; title: string; line: [number, number][]; distance: number; movingMs: number; pace: number | null; steps: number; records?: string[] }>(
+  function WalkCard({ name, title, line, distance, movingMs, pace, steps, records }, ref) {
+    return (
+      <View ref={ref} collapsable={false}>
+        <Frame accent={color.volt}>
+          <Text allowFontScaling={false} style={styles.kicker}>{(records?.[0] ?? title).toUpperCase()}</Text>
+          <View style={{ alignItems: 'center', marginTop: 14 }}>
+            <RouteThumb line={line} size={236} width={5} />
+          </View>
+          <Text allowFontScaling={false} style={[styles.hero, { color: color.volt, marginTop: 10, fontSize: 64 }]}>{fmtKm(distance)}</Text>
+          <Text allowFontScaling={false} style={[styles.title, { marginTop: 0, fontSize: 24 }]}>kilometres</Text>
+          <View style={[styles.stats, { marginTop: 22 }]}>
+            <Stat label="Time" value={fmtDuration(movingMs)} />
+            <Stat label="Pace /km" value={fmtPace(pace)} />
+            {steps ? <Stat label="Steps" value={steps.toLocaleString()} /> : null}
+          </View>
+          <Text allowFontScaling={false} style={[styles.small, { marginTop: 18 }]}>{name} on StepPool</Text>
+        </Frame>
+      </View>
+    );
+  },
+);
 
 function Stat({ label, value, accent, coin }: { label: string; value: string; accent?: string; coin?: 'gold' | 'silver' }) {
   return (

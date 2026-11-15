@@ -17,6 +17,8 @@ import { router } from 'expo-router';
 import { Intro } from '@/components/Intro';
 import { api, ApiError } from '@/lib/api';
 import { hrefFor, useInbox } from '@/lib/inbox';
+// Imported here so the background location task is registered as soon as the app (or a headless launch) loads.
+import { recorder, useRecorder } from '@/lib/walk/recorder';
 import { registerPush } from '@/lib/push';
 import { useSession } from '@/lib/session';
 import { registerBackgroundSync, syncSteps } from '@/lib/sync';
@@ -73,6 +75,8 @@ export default function RootLayout() {
     registerPush({ prompt: true }).catch(() => {});
     const refreshInbox = useInbox.getState().refresh;
     refreshInbox();
+    // A walk still recording from before the app was closed picks up where it was.
+    recorder.hydrate().catch(() => {});
     const sub = AppState.addEventListener('change', (s) => {
       if (s !== 'active') return;
       syncSteps().catch(() => {});
@@ -81,7 +85,12 @@ export default function RootLayout() {
     // A push arriving while open bumps the bell; tapping one (even from a cold start) opens its challenge.
     const received = Notifications.addNotificationReceivedListener(() => refreshInbox());
     const openFromPush = (r: Notifications.NotificationResponse | null) => {
-      const d = r?.notification.request.content.data as { challengeId?: string; kind?: string; screen?: string } | undefined;
+      const d = r?.notification.request.content.data as { challengeId?: string; kind?: string; screen?: string; walk?: string } | undefined;
+      // The walk's own notifications (live numbers, kilometre alerts) open the recorder; its buttons are handled there.
+      if (d?.walk) {
+        if (r?.actionIdentifier === 'pause' || r?.actionIdentifier === 'resume') return;
+        return router.push((useRecorder.getState().status === 'idle' ? '/walk/history' : '/walk') as never);
+      }
       const href = d ? hrefFor({ kind: (d.kind ?? 'goal') as never, challengeId: d.challengeId, screen: d.screen }) : null;
       if (href) router.push(href as never);
     };
@@ -121,6 +130,13 @@ export default function RootLayout() {
             <Stack.Screen name="settings/delete-account" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="code" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
             <Stack.Screen name="analytics" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="walk/index" options={{ animation: 'slide_from_bottom' }} />
+            <Stack.Screen name="walk/plan" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="walk/history" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="walk/[id]" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="walk/replay/[id]" options={{ animation: 'fade' }} />
+            <Stack.Screen name="walk/compare" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="settings/walk" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="claim/[payoutId]" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
             <Stack.Screen name="join/[code]" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
             <Stack.Screen name="withdraw" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />

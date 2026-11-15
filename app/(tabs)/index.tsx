@@ -16,9 +16,11 @@ import { useInbox } from '@/lib/inbox';
 import { pendingInvite } from '@/lib/invite';
 import { useSession } from '@/lib/session';
 import { syncSteps } from '@/lib/sync';
+import { useRecorder } from '@/lib/walk/recorder';
 import { useApi } from '@/lib/useApi';
 import { updateWidget } from '@/lib/widget';
 import { dailyTarget } from '@/shared/goals';
+import { fmtDuration, fmtKm } from '@/shared/walk';
 import { color, space, type } from '@/theme/tokens';
 
 function greeting() {
@@ -29,6 +31,8 @@ function greeting() {
 export default function TodayScreen() {
   const me = useSession((s) => s.me);
   const unread = useInbox((s) => s.unread);
+  const walking = useRecorder((s) => s.status !== 'idle');
+  const walkStats = useRecorder((s) => s.stats);
   const today = useApi(api.today, [], 'today');
   const lobby = useApi(api.challenges, [], 'challenges');
   const live = lobby.data?.mine.filter((c) => c.status === 'live') ?? [];
@@ -103,6 +107,21 @@ export default function TodayScreen() {
             <T v="caption">of {target.toLocaleString()}</T>
           </StepRing>
         </View>
+
+        <Press onPress={() => router.push('/walk' as never)} accessibilityRole="button" accessibilityLabel={walking ? 'Open the walk in progress' : 'Record a walk'}>
+          <Card tone={walking ? 'volt' : undefined}>
+            <Row gap={space.md}>
+              <View style={[styles.walkIcon, walking && { backgroundColor: color.volt }]}>
+                <IconSymbol name={walking ? 'location.fill' : 'map.fill'} size={20} color={walking ? color.bg : color.volt} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <T v="heading" style={{ fontSize: 16 }}>{walking ? 'Walk in progress' : 'Record a walk'}</T>
+                <T v="caption">{walking ? `${fmtKm(walkStats?.distance ?? 0)} km · ${fmtDuration(walkStats?.movingMs ?? 0)}` : 'Live map, pace, steps and directions'}</T>
+              </View>
+              <IconSymbol name="chevron.right" size={16} color={color.muted} />
+            </Row>
+          </Card>
+        </Press>
 
         {above ? (
           <Reveal>
@@ -193,5 +212,6 @@ export default function TodayScreen() {
 const styles = StyleSheet.create({
   bell: { width: 40, height: 40, borderRadius: 20, backgroundColor: color.surface, alignItems: 'center', justifyContent: 'center', borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
   badge: { position: 'absolute', top: -2, right: -2, minWidth: 18, height: 18, paddingHorizontal: 4, borderRadius: 9, backgroundColor: color.volt, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: color.bg },
+  walkIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: color.voltDim, alignItems: 'center', justifyContent: 'center' },
   badgeText: { fontFamily: 'Inter_600SemiBold', fontSize: 10, lineHeight: 12, color: color.bg },
 });

@@ -5,6 +5,7 @@ import { Pressable, ScrollView, View } from 'react-native';
 import { HoldButton } from '@/components/ds/HoldButton';
 import { Card, Row, Screen, T } from '@/components/ds/primitives';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { wipeWalks } from '@/lib/walk/store';
 import { api } from '@/lib/api';
 import { haptic } from '@/lib/haptics';
 import { useSession } from '@/lib/session';
@@ -30,6 +31,7 @@ export default function DeleteAccount() {
     setError(null);
     try {
       await api.deleteAccount();
+      wipeWalks(); // recorded walks live only on this phone; remove them with the account
       haptic.success();
       await signOut();
     } catch (e) {

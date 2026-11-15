@@ -15,6 +15,8 @@ import type {
   Payout,
 } from '@/shared/contracts';
 
+import type { PlannedRoute } from '@/shared/walk';
+
 import { useSession } from './session';
 
 export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:4000';
@@ -97,5 +99,10 @@ export const api = {
   createCash: (body: CreateCashChallengeBody) => request<ChallengeSummary>('POST', '/challenges/cash', body),
   cashJoin: (id: string) => request<CashJoin>('POST', `/cash/challenges/${id}/join`),
   payment: (reference: string) => request<{ status: 'pending' | 'success' | 'failed'; challengeId?: string }>('GET', `/cash/payments/${reference}`),
+  /** Walking routes from the server's router (Ghana). Coordinates are used for the request and never stored. */
+  directions: (from: [number, number], to: [number, number]) => request<PlannedRoute>('POST', '/routes/directions', { from, to }),
+  /** A loop of about `distance` metres starting and ending at `from`; another `seed` suggests another loop. */
+  loop: (from: [number, number], distance: number, seed = 0) => request<PlannedRoute>('POST', '/routes/loop', { from, distance, seed }),
+  snap: (points: { lng: number; lat: number; t: number; acc?: number }[]) => request<{ snapped: { coords: [number, number][]; distance: number } | null }>('POST', '/routes/snap', { points }),
   withdraw: (body: { amount: number; momoNumber: string; network: 'MTN' | 'VOD' | 'ATL' }) => request<{ reference: string }>('POST', '/cash/withdraw', body),
 };

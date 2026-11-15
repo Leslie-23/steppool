@@ -6,6 +6,7 @@ module.exports = (config) => ({
   colors: {
     $widgetBackground: '#07080A',
     $accent: '#D7FF3A',
+    bg: '#07080A',
     volt: '#D7FF3A',
     gold: '#E8C36A',
     ink: '#F4F1EA',

@@ -56,6 +56,21 @@ export default function ProfileScreen() {
           </Card>
         </Press>
 
+        <Press onPress={() => router.push('/walk/history' as never)} accessibilityRole="button" accessibilityLabel="My walks">
+          <Card>
+            <Row gap={space.md}>
+              <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: color.raised, alignItems: 'center', justifyContent: 'center' }}>
+                <IconSymbol name="map.fill" size={20} color={color.text} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <T v="heading" style={{ fontSize: 16 }}>My walks</T>
+                <T v="caption">Recorded routes, replays, heatmap and saved routes</T>
+              </View>
+              <IconSymbol name="chevron.right" size={16} color={color.muted} />
+            </Row>
+          </Card>
+        </Press>
+
         <Press onPress={() => router.push('/settings/notifications')} accessibilityRole="button" accessibilityLabel="Notification settings">
           <Card>
             <Row gap={space.md}>

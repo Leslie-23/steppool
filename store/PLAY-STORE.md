@@ -157,8 +157,9 @@ All collected data: **required** unless noted, **not** processed ephemerally, pu
 | Personal info       | Phone number        | optional: only when claiming a sponsored prize |
 | Health and fitness  | Fitness info        | step counts and their source                   |
 | Device or other IDs | Device or other IDs | push notification token                        |
+| Location            | Precise location    | optional; **processed ephemerally**: sent only when the user asks for walking directions, a suggested loop or path matching, and not stored. Recorded routes stay on the device |
 
-Not collected: location, contacts, photos, files, messages, browsing history, financial info, diagnostics, analytics.
+Not collected: contacts, photos, files, messages, browsing history, financial info, diagnostics, analytics.
 
 ## 5. Release
 

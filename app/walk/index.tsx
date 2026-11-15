@@ -18,7 +18,7 @@ import { color, radius, space } from '@/theme/tokens';
 /** Record a walk: live map, the route drawn behind you, and the numbers that matter while moving. */
 export default function RecordWalk() {
   const insets = useSafeAreaInsets();
-  const { route: routeId } = useLocalSearchParams<{ route?: string }>();
+  const { route: routeId, auto, finishAfter } = useLocalSearchParams<{ route?: string; auto?: string; finishAfter?: string }>();
   const { status, track, stats, gps, nav, noSteps } = useRecorder();
   const routes = useWalks((s) => s.routes);
   const loadWalks = useWalks((s) => s.load);
@@ -81,6 +81,19 @@ export default function RecordWalk() {
       setProblem('short');
     }
   };
+
+  // Dev builds only: /walk?auto=start (optionally &finishAfter=<seconds>) drives the recorder without touching the screen.
+  useEffect(() => {
+    if (!__DEV__ || !auto) return;
+    if (auto === 'start' && idle) {
+      start();
+      if (Number(finishAfter) > 0) setTimeout(() => finish(), Number(finishAfter) * 1000);
+    }
+    if (auto === 'pause') recorder.pause();
+    if (auto === 'resume') recorder.resume();
+    if (auto === 'finish' && !idle) finish();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auto]);
 
   return (
     <View style={{ flex: 1, backgroundColor: color.bg }}>

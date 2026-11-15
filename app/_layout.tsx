@@ -28,6 +28,16 @@ SplashScreen.preventAutoHideAsync();
 
 const INTRO_KEY = 'steppool.introSeen';
 
+function devConfig(): { login?: string; route?: string; noPush?: boolean } {
+  try {
+    const { File, Paths } = require('expo-file-system') as typeof import('expo-file-system'); // eslint-disable-line @typescript-eslint/no-require-imports
+    const f = new File(Paths.document, 'dev.json');
+    return f.exists ? JSON.parse(f.textSync()) : {};
+  } catch {
+    return {};
+  }
+}
+
 const theme = { ...DarkTheme, colors: { ...DarkTheme.colors, background: color.bg, card: color.bg, primary: color.volt, text: color.text, border: color.hairline } };
 
 export default function RootLayout() {
@@ -72,7 +82,7 @@ export default function RootLayout() {
     syncSteps().catch(() => {});
     registerBackgroundSync().catch(() => {});
     // Asked once, right after onboarding; iOS shows the system prompt only the first time, so later launches just refresh the token.
-    registerPush({ prompt: true }).catch(() => {});
+    if (!(__DEV__ && devConfig().noPush)) registerPush({ prompt: true }).catch(() => {});
     const refreshInbox = useInbox.getState().refresh;
     refreshInbox();
     // A walk still recording from before the app was closed picks up where it was.
@@ -104,6 +114,23 @@ export default function RootLayout() {
   }, [onboarded]);
 
   const loading = !fontsLoaded || !ready || introSeen === null || (signedIn && !me);
+
+  // Dev builds only: a `dev.json` dropped into the app's Documents folder ({"login": "email,code", "route": "/walk/history"})
+  // signs in and opens a screen directly, so screens can be checked on a simulator without tapping through.
+  useEffect(() => {
+    if (!__DEV__ || loading) return;
+    const dev = devConfig();
+    if (!signedIn && dev.login) {
+      const [email, code] = dev.login.split(',');
+      // Wait for the navigator to mount; a push before that is dropped.
+      const id = setTimeout(() => router.push(`/dev-login?email=${encodeURIComponent(email)}${code ? `&code=${code}` : ''}` as never), 1200);
+      return () => clearTimeout(id);
+    } else if (onboarded && dev.route) {
+      const id = setTimeout(() => router.push(dev.route as never), 800);
+      return () => clearTimeout(id);
+    }
+  }, [loading, signedIn, onboarded]);
+
   useEffect(() => {
     if (!loading) SplashScreen.hideAsync();
   }, [loading]);

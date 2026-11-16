@@ -75,7 +75,7 @@ export default function SignInScreen() {
 
   return (
     <Screen>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <View style={{ flex: 1, justifyContent: 'center' }}>
           <Animated.View entering={FadeInDown.duration(700).springify()}>
             <Row gap={space.sm}>

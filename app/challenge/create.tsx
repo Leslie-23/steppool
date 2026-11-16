@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { CashRules } from '@/components/cash/CashRules';
 import { Coin } from '@/components/ds/Coin';
@@ -73,7 +73,7 @@ export default function CreateChallenge() {
 
   return (
     <Screen>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <ScrollView contentContainerStyle={{ gap: space.xl, paddingBottom: space.xxl }} keyboardShouldPersistTaps="handled">
           <Row style={{ justifyContent: 'space-between', marginTop: space.md }}>
             <T v="title">New challenge</T>

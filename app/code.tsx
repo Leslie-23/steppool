@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
 
 import { Coin, CoinAmount } from '@/components/ds/Coin';
@@ -70,7 +70,7 @@ export default function EnterCode() {
 
   return (
     <Screen>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <Row style={{ justifyContent: 'flex-end', marginTop: space.md }}>
           <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel="Close">
             <IconSymbol name="xmark" size={22} color={color.muted} />

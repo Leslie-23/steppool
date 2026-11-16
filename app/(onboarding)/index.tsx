@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, StyleSheet, TextInput, View } from 'react-native';
 import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
 
 import { Avatar, Button, Screen, T } from '@/components/ds/primitives';
@@ -28,7 +28,7 @@ export default function NameScreen() {
 
   return (
     <Screen>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', gap: space.xl }}>
           <Animated.View entering={ZoomIn.springify()} key={name.trim().slice(0, 2)}>
             <Avatar name={name.trim() || '?'} size={96} ring={valid ? color.volt : color.hairline} />

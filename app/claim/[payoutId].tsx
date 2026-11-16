@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, StyleSheet, TextInput, View } from 'react-native';
 
 import { Segmented } from '@/components/ds/Segmented';
 import { Button, Screen, T } from '@/components/ds/primitives';
@@ -36,7 +36,7 @@ export default function ClaimPrize() {
 
   return (
     <Screen glow={color.gold}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <View style={{ flex: 1, justifyContent: 'center', gap: space.xl }}>
           <T v="title">Where should we send it?</T>
           <Segmented
